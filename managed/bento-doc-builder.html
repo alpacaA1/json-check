@@ -360,17 +360,14 @@
   body.dark-theme .tool-btn-icon:hover { background: rgba(255,255,255,0.1); }
   .tool-btn-icon.del-btn:hover { color: #e5484d; background: rgba(229, 72, 77, 0.1); }
 
-  /* Sleek Custom Select Dropdown UI */
-  .size-select-wrap {
+  /* 100% Custom Size Dropdown Popover Menu */
+  .custom-size-dropdown {
     position: relative;
-    display: inline-flex;
-    align-items: center;
+    display: inline-block;
   }
-  .size-select {
-    appearance: none;
-    -webkit-appearance: none;
+  .size-trigger-btn {
     min-height: 26px;
-    padding: 0 18px 0 8px;
+    padding: 0 8px;
     font-size: 11px;
     font-weight: 650;
     border: 1px solid var(--border);
@@ -378,19 +375,54 @@
     background: var(--panel);
     color: var(--text-main);
     cursor: pointer;
-    outline: none;
-    transition: border-color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 4px;
   }
-  .size-select:hover {
+  .size-trigger-btn:hover {
     border-color: var(--border-hover);
     background: var(--panel-hover);
   }
-  .size-select-arrow {
+
+  .size-menu-popover {
     position: absolute;
-    right: 6px;
-    pointer-events: none;
-    font-size: 9px;
-    color: var(--text-muted);
+    bottom: 34px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 170px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    padding: 5px;
+    display: grid;
+    gap: 2px;
+    z-index: 60;
+    backdrop-filter: blur(12px);
+  }
+  body.dark-theme .size-menu-popover {
+    background: rgba(23, 27, 34, 0.96);
+  }
+
+  .size-option-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--text-main);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+  }
+  .size-option-item:hover {
+    background: var(--accent-bg);
+    color: var(--accent-dark);
+  }
+  .size-option-item.active {
+    font-weight: 750;
+    color: var(--accent-dark);
+    background: rgba(223, 106, 75, 0.12);
   }
 
   /* Card Inner Contents & Badges */
@@ -793,6 +825,8 @@
     }
   ];
 
+  let openMenuCardId = null;
+
   // History Stack for Undo/Redo
   let historyStack = [];
   let redoStack = [];
@@ -854,11 +888,22 @@
     menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
   }
 
+  function toggleSizeMenu(cardId, e) {
+    e.stopPropagation();
+    openMenuCardId = openMenuCardId === cardId ? null : cardId;
+    renderGrid();
+  }
+
   document.addEventListener('click', (e) => {
-    const btn = e.target.closest('button');
-    const menu = document.getElementById('addCardMenu');
-    if (!btn || !btn.getAttribute('onclick')?.includes('toggleAddMenu')) {
-      if (menu && !menu.contains(e.target)) menu.style.display = 'none';
+    const addBtn = e.target.closest('button');
+    const addMenu = document.getElementById('addCardMenu');
+    if (!addBtn || !addBtn.getAttribute('onclick')?.includes('toggleAddMenu')) {
+      if (addMenu && !addMenu.contains(e.target)) addMenu.style.display = 'none';
+    }
+
+    if (openMenuCardId && !e.target.closest('.custom-size-dropdown')) {
+      openMenuCardId = null;
+      renderGrid();
     }
   });
 
@@ -881,7 +926,9 @@
       cardEl.classList.remove(c.span);
       cardEl.classList.add(newSpan);
       c.span = newSpan;
+      openMenuCardId = null;
       saveState();
+      renderGrid();
       showToast('已更改卡片尺寸');
     }
   }
@@ -1044,6 +1091,19 @@
     return map[type] || '卡片';
   }
 
+  function getSpanLabel(span) {
+    const map = {
+      'span-05x': '0.5x 迷你',
+      'span-075x': '0.75x 紧凑',
+      'span-1x1': '1.0x 标准',
+      'span-15x': '1.5x 宽屏',
+      'span-2x1': '2.0x 通栏',
+      'span-1x2': '1x2 纵向',
+      'span-2x2': '2x2 大方'
+    };
+    return map[span] || '1.0x 标准';
+  }
+
   function renderGrid() {
     updateCardCountBadge();
     const grid = document.getElementById('bentoGrid');
@@ -1142,6 +1202,18 @@
         `;
       }
 
+      const sizeOptions = [
+        ['span-05x', '0.5x 迷你 (1/4宽)'],
+        ['span-075x', '0.75x 紧凑 (1/3宽)'],
+        ['span-1x1', '1.0x 标准 (1/2宽)'],
+        ['span-15x', '1.5x 宽屏 (3/4宽)'],
+        ['span-2x1', '2.0x 通栏 (全宽)'],
+        ['span-1x2', '1x2 纵向加高'],
+        ['span-2x2', '2x2 超大方卡']
+      ];
+
+      const isMenuOpen = openMenuCardId === card.id;
+
       return `
         <div class="bento-card ${card.span} ${card.dark ? 'dark-card' : ''}" id="${card.id}">
           <div>
@@ -1154,18 +1226,25 @@
           </div>
           <div class="card-toolbar">
             <span class="drag-handle" draggable="true" title="按住拖拽排序">⠿</span>
-            <div class="size-select-wrap">
-              <select class="size-select" onchange="changeSpan('${card.id}', this.value)" title="选择卡片尺寸">
-                <option value="span-05x" ${card.span === 'span-05x' ? 'selected' : ''}>0.5x 迷你</option>
-                <option value="span-075x" ${card.span === 'span-075x' ? 'selected' : ''}>0.75x 紧凑</option>
-                <option value="span-1x1" ${card.span === 'span-1x1' ? 'selected' : ''}>1.0x 标准</option>
-                <option value="span-15x" ${card.span === 'span-15x' ? 'selected' : ''}>1.5x 宽屏</option>
-                <option value="span-2x1" ${card.span === 'span-2x1' ? 'selected' : ''}>2.0x 通栏</option>
-                <option value="span-1x2" ${card.span === 'span-1x2' ? 'selected' : ''}>1x2 纵向</option>
-                <option value="span-2x2" ${card.span === 'span-2x2' ? 'selected' : ''}>2x2 大方</option>
-              </select>
-              <span class="size-select-arrow">▾</span>
+
+            <!-- Custom Bento Size Popover -->
+            <div class="custom-size-dropdown">
+              <button class="size-trigger-btn" onclick="toggleSizeMenu('${card.id}', event)" title="修改卡片尺寸">
+                <span>${getSpanLabel(card.span)}</span>
+                <small style="opacity:0.6; font-size:9px;">▾</small>
+              </button>
+              ${isMenuOpen ? `
+                <div class="size-menu-popover" onclick="event.stopPropagation()">
+                  ${sizeOptions.map(([optVal, optLabel]) => `
+                    <div class="size-option-item ${card.span === optVal ? 'active' : ''}" onclick="changeSpan('${card.id}', '${optVal}')">
+                      <span>${optLabel}</span>
+                      ${card.span === optVal ? '<span>✓</span>' : ''}
+                    </div>
+                  `).join('')}
+                </div>
+              ` : ''}
             </div>
+
             <button class="tool-btn-icon" onclick="toggleDark('${card.id}')" title="切换暗黑风格">🎨</button>
             <button class="tool-btn-icon del-btn" onclick="removeCard('${card.id}')" title="删除此卡片">✕</button>
           </div>
