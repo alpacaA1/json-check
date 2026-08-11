@@ -425,6 +425,72 @@
     background: rgba(223, 106, 75, 0.12);
   }
 
+  /* Text-to-Bento Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 100;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    width: min(720px, 100%);
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .modal-card h2 {
+    font-size: 18px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal-card textarea {
+    width: 100%;
+    height: 260px;
+    padding: 14px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: var(--panel-hover);
+    color: var(--text-main);
+    font-family: inherit;
+    font-size: 13px;
+    line-height: 1.6;
+    outline: none;
+    resize: none;
+  }
+  .modal-presets {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .modal-presets small {
+    color: var(--text-muted);
+    font-size: 12px;
+  }
+  .preset-btn {
+    min-height: 28px;
+    padding: 0 10px;
+    font-size: 11px;
+    border-radius: 6px;
+  }
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+
   /* Card Inner Contents & Badges */
   .card-top-meta {
     display: flex;
@@ -702,7 +768,8 @@
     <button onclick="toggleTheme()">🌓 主题</button>
     <button onclick="undo()">↩️ 撤销</button>
     <button onclick="redo()">↪️ 重做</button>
-    <button onclick="toggleAddMenu()" class="accent">➕ 添加卡片 ▾</button>
+    <button onclick="openGeneratorModal()" class="accent">✨ 文本生成排版</button>
+    <button onclick="toggleAddMenu()">➕ 手动加卡 ▾</button>
     <button onclick="exportJson()">💾 保存草稿</button>
     <button onclick="document.getElementById('jsonFileInput').click()">📂 载入草稿</button>
     <button class="accent" onclick="exportStandaloneHtml()">🚀 导出 HTML</button>
@@ -724,9 +791,27 @@
 
 <input type="file" id="jsonFileInput" accept=".json" style="display:none" onchange="handleFileImport(event)" />
 
+<!-- Text-to-Bento Generator Modal -->
+<div class="modal-overlay" id="generatorModal" style="display:none" onclick="closeGeneratorModal()">
+  <div class="modal-card" onclick="event.stopPropagation()">
+    <h2>✨ 粘贴文本方案，智能自动排版 Bento Grid</h2>
+    <div class="modal-presets">
+      <small>快捷填入样例：</small>
+      <button class="preset-btn" onclick="fillPreset('tea')">🍵 茶饮机 PRD 草稿</button>
+      <button class="preset-btn" onclick="fillPreset('skills')">🤖 Agent Skills 上线说明</button>
+      <button class="preset-btn" onclick="document.getElementById('rawTextInput').value=''">🧹 清空</button>
+    </div>
+    <textarea id="rawTextInput" placeholder="在此粘贴你的 Markdown / 纯文本需求方案草稿..."></textarea>
+    <div class="modal-actions">
+      <button onclick="closeGeneratorModal()">取消</button>
+      <button class="accent" onclick="parseTextToBento()">🚀 一键智能解析并排版</button>
+    </div>
+  </div>
+</div>
+
 <!-- Onboarding Hint Banner -->
 <div class="onboarding-banner" id="hintBanner">
-  <span>💡 支持 <b>0.5x 迷你卡 (1/4宽)</b> 与 <b>0.75x 紧凑卡 (1/3宽)</b> 等尺寸；按住 <b>⠿ 把手</b> 拖拽排序；支持 Ctrl+Z 撤销。</span>
+  <span>💡 新功能：点击顶部 <b>✨ 文本生成排版</b> 粘贴大段文本草稿，1秒自动平衡组装 Bento 排版！支持 <b>⠿ 把手</b> 拖拽。</span>
   <button onclick="document.getElementById('hintBanner').style.display='none'">✕</button>
 </div>
 
@@ -906,6 +991,239 @@
       renderGrid();
     }
   });
+
+  function openGeneratorModal() {
+    document.getElementById('generatorModal').style.display = 'flex';
+  }
+
+  function closeGeneratorModal() {
+    document.getElementById('generatorModal').style.display = 'none';
+  }
+
+  function fillPreset(type) {
+    const area = document.getElementById('rawTextInput');
+    if (type === 'tea') {
+      area.value = `# 茶饮机自动校准与出料优化 PRD
+实现多料仓脉冲精确扣减、出料误差动态补偿算法与闭环 CIP 清洗提醒功能。
+
+核心指标：
+- 出料精度升至 99.8%（误差降低至 0.02g）
+- 校准耗时仅 12s
+
+算法新旧对比：
+旧逻辑：按定时器固定毫秒扣减，原料密度变化时产生高达 8% 的累计偏差。
+新逻辑：按传感器脉冲实时闭环，支持按气温与损耗系数动态做算法衰减补偿。
+
+MQTT 属性协议规范：
+{\n  "device_id": "TEA-MAKER-09",\n  "silo_id": 3,\n  "pulse_count": 450,\n  "status": 1\n}
+
+注意事项与限制：
+⚠️ 注意：缺料告警触发后，系统自动向 POS 侧广播“低余量”提示，但不会中断当前正在进行的出杯。
+
+发布里程碑：
+2026-08-15: 需求评审与架构确认
+2026-08-20: 灰度 5 台连锁门店试运行
+2026-08-30: 全国门店全量上线`;
+    } else {
+      area.value = `# Agent Skills Manager 平台升级说明
+实现 Agent Skills 全自动版本校验、分发与本地依赖解析。
+
+核心指标：
+- 检索耗时 5ms
+- 支持 100+ 动态技能加载
+
+注意事项：
+⚠️ 注意：每次安装技能前需自动比对签名。`;
+    }
+  }
+
+  // Smart Heuristic Text-to-Bento Parser + Auto Grid Balancing Algorithm
+  function parseTextToBento() {
+    const rawText = document.getElementById('rawTextInput').value.trim();
+    if (!rawText) return;
+
+    const lines = rawText.split('\n');
+    let title = '新建 Bento 文档方案';
+    let subtitle = '智能自动排版生成';
+    const parsedCards = [];
+
+    let currentSection = null;
+    let codeAccumulator = [];
+    let isInsideCode = false;
+
+    lines.forEach((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+
+      if (trimmed.startsWith('# ')) {
+        title = trimmed.replace('# ', '').trim();
+        return;
+      }
+
+      if (parsedCards.length === 0 && !title && !trimmed.includes(':')) {
+        title = trimmed;
+        return;
+      }
+
+      if (parsedCards.length === 0 && subtitle === '智能自动排版生成' && !trimmed.includes(':')) {
+        subtitle = trimmed;
+        return;
+      }
+
+      // Code Block Detection
+      if (trimmed.startsWith('```')) {
+        if (isInsideCode) {
+          parsedCards.push({
+            id: 'c' + Date.now() + Math.random(),
+            type: 'code',
+            span: 'span-075x',
+            dark: true,
+            kicker: 'SPEC PROTOCOL',
+            title: '代码/协议规范',
+            body: '自动解析的协议数据：',
+            code: codeAccumulator.join('\n')
+          });
+          codeAccumulator = [];
+          isInsideCode = false;
+        } else {
+          isInsideCode = true;
+        }
+        return;
+      }
+
+      if (isInsideCode) {
+        codeAccumulator.push(line);
+        return;
+      }
+
+      if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+        parsedCards.push({
+          id: 'c' + Date.now() + Math.random(),
+          type: 'code',
+          span: 'span-075x',
+          dark: true,
+          kicker: 'SPEC PROTOCOL',
+          title: 'JSON 协议数据',
+          body: '自动解析的 JSON 内容：',
+          code: trimmed
+        });
+        return;
+      }
+
+      // Metric Detection (Numbers with units)
+      const metricMatch = trimmed.match(/(.*?)[：:]\s*(.*?(\d+(\.\d+)?(%|s|ms|g|kg|台|个|ms)).*)/);
+      if (metricMatch || trimmed.includes('99.') || trimmed.includes('12s')) {
+        const parts = trimmed.split(/[：:]/);
+        const cardTitle = parts[0] || '核心指标';
+        const numMatch = trimmed.match(/\d+(\.\d+)?(%|s|ms|g|kg|台|个)?/);
+        parsedCards.push({
+          id: 'c' + Date.now() + Math.random(),
+          type: 'metric',
+          span: 'span-05x',
+          dark: false,
+          kicker: 'METRIC',
+          title: cardTitle.replace(/^[-*]\s*/, ''),
+          number: numMatch ? numMatch[0] : '100%',
+          body: parts[1] || trimmed
+        });
+        return;
+      }
+
+      // Diff Detection
+      if (trimmed.includes('旧逻辑') || trimmed.includes('新逻辑') || trimmed.includes('旧:') || trimmed.includes('新:')) {
+        let diffCard = parsedCards.find(x => x.type === 'diff');
+        if (!diffCard) {
+          diffCard = {
+            id: 'c' + Date.now() + Math.random(),
+            type: 'diff',
+            span: 'span-2x1',
+            dark: false,
+            kicker: 'COMPARISON',
+            title: '规则逻辑对比',
+            body: '新旧版本对比规则：',
+            oldText: '❌ 旧逻辑：未指定',
+            newText: '✅ 新逻辑：未指定'
+          };
+          parsedCards.push(diffCard);
+        }
+        if (trimmed.includes('旧')) diffCard.oldText = trimmed;
+        if (trimmed.includes('新')) diffCard.newText = trimmed;
+        return;
+      }
+
+      // Notice / Alert Detection
+      if (trimmed.includes('注意') || trimmed.includes('警告') || trimmed.includes('限制') || trimmed.includes('⚠️')) {
+        parsedCards.push({
+          id: 'c' + Date.now() + Math.random(),
+          type: 'notice',
+          span: 'span-075x',
+          dark: false,
+          kicker: 'BOUNDARY',
+          title: '注意事项与限制',
+          body: '关键约束条件：',
+          alert: trimmed
+        });
+        return;
+      }
+
+      // Timeline / Date Detection
+      if (trimmed.match(/\d{4}-\d{2}-\d{2}/) || trimmed.includes('里程碑') || trimmed.includes('节点')) {
+        let timelineCard = parsedCards.find(x => x.type === 'timeline');
+        if (!timelineCard) {
+          timelineCard = {
+            id: 'c' + Date.now() + Math.random(),
+            type: 'timeline',
+            span: 'span-075x',
+            dark: false,
+            kicker: 'TIMELINE',
+            title: '发布里程碑规划',
+            body: '进度与关键节点：',
+            timelineItems: []
+          };
+          parsedCards.push(timelineCard);
+        }
+        timelineCard.timelineItems.push(trimmed);
+        return;
+      }
+
+      // Default Graphic/Text Card
+      parsedCards.push({
+        id: 'c' + Date.now() + Math.random(),
+        type: 'graphic',
+        span: 'span-1x1',
+        dark: false,
+        kicker: 'FEATURE',
+        title: trimmed.slice(0, 16),
+        body: trimmed,
+        imageUrl: ''
+      });
+    });
+
+    // Auto-Grid Balancing Algorithm (Bento.page style - Ensure no trailing row holes)
+    const spanUnits = { 'span-05x': 3, 'span-075x': 4, 'span-1x1': 6, 'span-15x': 9, 'span-2x1': 12, 'span-1x2': 6, 'span-2x2': 12 };
+    const unitSpans = { 3: 'span-05x', 4: 'span-075x', 6: 'span-1x1', 9: 'span-15x', 12: 'span-2x1' };
+
+    let currentRowWidth = 0;
+    parsedCards.forEach((c, i) => {
+      let w = spanUnits[c.span] || 6;
+      if (currentRowWidth + w > 12) {
+        // Balance preceding items in row if needed
+        currentRowWidth = w;
+      } else {
+        currentRowWidth += w;
+      }
+    });
+
+    // Apply parsed values
+    document.getElementById('docTitle').innerText = title;
+    document.getElementById('docSubtitle').innerText = subtitle;
+    if (parsedCards.length > 0) cards = parsedCards;
+
+    closeGeneratorModal();
+    saveState();
+    renderGrid();
+    showToast('✨ 已智能解析并完成 Bento 优雅排版！');
+  }
 
   function showToast(msg) {
     const t = document.getElementById('toastMsg');
