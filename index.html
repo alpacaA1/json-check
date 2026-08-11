@@ -3,475 +3,886 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tool Hub · 云端工具与原型控制台</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<title>Tool Hub · 云端控制台</title>
 <style>
   :root {
-    --bg-main: #0b0f19;
-    --bg-card: rgba(22, 30, 46, 0.7);
-    --bg-card-hover: rgba(30, 41, 64, 0.85);
-    --border-card: rgba(255, 255, 255, 0.08);
-    --border-hover: rgba(99, 102, 241, 0.4);
-    --text-primary: #f8fafc;
-    --text-secondary: #94a3b8;
-    --text-muted: #64748b;
-    --accent-indigo: #6366f1;
-    --accent-purple: #a855f7;
-    --accent-cyan: #06b6d4;
-    --accent-emerald: #10b981;
-    --accent-amber: #f59e0b;
-    --glow-indigo: rgba(99, 102, 241, 0.15);
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+    color: #1f201d;
+    background: #f5f0e8;
   }
-
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
+  * { box-sizing: border-box; }
   body {
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background-color: var(--bg-main);
-    background-image: 
-      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
-      radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
-    color: var(--text-primary);
-    min-height: 100vh;
-    padding: 32px 24px 60px;
+    margin: 0;
+    min-width: 920px;
+    height: 100vh;
+    overflow: hidden;
     -webkit-font-smoothing: antialiased;
+    background: #f5f0e8;
+  }
+  button, input { font: inherit; }
+  button { cursor: pointer; border-radius: 9px; }
+  button:focus-visible, input:focus-visible {
+    outline: 3px solid rgba(223, 106, 75, .28);
+    outline-offset: 2px;
+  }
+  .ui-icon { display: block; flex: none; }
+
+  /* App Shell Grid */
+  .app-shell {
+    display: grid;
+    grid-template-columns: 248px minmax(0, 1fr);
+    height: 100vh;
+    overflow: hidden;
+    background: #f5f0e8;
   }
 
-  .container {
-    max-width: 1160px;
-    margin: 0 auto;
-  }
-
-  /* Header */
-  header {
+  /* Sidebar */
+  .sidebar {
     display: flex;
+    height: 100vh;
+    flex-direction: column;
+    padding: 32px 16px 18px;
+    overflow: hidden;
+    background: #242421;
+    color: rgba(255, 253, 249, .78);
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 4px 8px 24px;
+  }
+  .brand > b {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    background: #df6a4b;
+    color: #30140d;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .2);
+  }
+  .brand strong, .brand small { display: block; }
+  .brand strong { color: #fffdf9; font-size: 18px; letter-spacing: -.012em; }
+  .brand small { margin-top: 3px; color: rgba(255, 253, 249, .48); font-size: 10px; letter-spacing: .12em; }
+
+  .command-trigger {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
-    align-items: center;
-    margin-bottom: 36px;
-    padding-bottom: 24px;
-    border-bottom: 1px solid var(--border-card);
-    flex-wrap: wrap;
-    gap: 20px;
-  }
-
-  .brand-group {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-  }
-
-  .brand-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
-  }
-
-  .brand-icon svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 2.2; }
-
-  .brand-title h1 {
-    font-size: 24px;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-  }
-
-  .brand-title p {
-    font-size: 13px;
-    color: var(--text-secondary);
-    margin-top: 2px;
-  }
-
-  .header-badge {
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    color: var(--accent-emerald);
-    padding: 6px 14px;
-    border-radius: 20px;
+    width: 100%;
+    height: 42px;
+    margin: 0 0 22px;
+    padding: 0 11px;
+    border: 1px solid rgba(255, 255, 255, .12);
+    border-radius: 10px;
+    background: rgba(255, 255, 255, .06);
+    color: rgba(255, 253, 249, .66);
     font-size: 12px;
-    font-weight: 600;
-    display: inline-flex;
+    text-align: left;
+  }
+  .command-trigger > span, nav button > span { display: flex; align-items: center; gap: 8px; }
+  .command-trigger:hover { background: rgba(255, 255, 255, .1); color: #fffdf9; }
+  .command-trigger kbd, .toolbar-search kbd, .palette-search kbd {
+    padding: 3px 5px;
+    border: 1px solid currentColor;
+    border-radius: 5px;
+    font-size: 10px;
+    font-family: inherit;
+    opacity: .72;
+  }
+
+  .nav-label { margin: 0 10px 8px; color: rgba(255, 253, 249, .34); font-size: 10px; font-weight: 720; letter-spacing: .12em; }
+  nav { display: grid; gap: 5px; }
+  nav button {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 44px;
+    padding: 0 12px;
+    border: 0;
+    border-radius: 12px;
+    background: transparent;
+    color: inherit;
+    font-size: 14px;
+    font-weight: 610;
+    text-align: left;
+    transition: .16s;
+  }
+  nav button:hover { background: rgba(255, 255, 255, .055); color: #fffdf9; }
+  nav .nav-active { background: #30302c; color: #fffdf9; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04); }
+  nav .nav-active:before {
+    position: absolute; left: 5px; width: 5px; height: 5px; border-radius: 50%; background: #df6a4b; content: "";
+  }
+  nav em {
+    min-width: 24px;
+    padding: 3px 7px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .08);
+    color: rgba(255, 255, 255, .62);
+    font-size: 11px;
+    font-style: normal;
+    text-align: center;
+  }
+
+  .side-foot {
+    margin-top: auto;
+    padding: 13px 12px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, .035);
+    color: rgba(255, 253, 249, .65);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+  .side-foot > i, .sync-state i {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-right: 7px;
+    border-radius: 50%;
+    background: #65c98d;
+    box-shadow: 0 0 0 4px rgba(101, 201, 141, .1);
+  }
+  .side-foot small { color: rgba(255, 253, 249, .42); }
+
+  /* Workspace Header & Main Content */
+  .workspace {
+    min-width: 0;
+    height: 100vh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    background: #f5f0e8;
+  }
+  .app-toolbar {
+    position: sticky;
+    z-index: 10;
+    top: 0;
+    display: flex;
+    align-items: center;
+    height: 68px;
+    padding: 0 30px;
+    border-bottom: 1px solid rgba(117, 102, 85, .12);
+    background: rgba(245, 240, 232, .94);
+    backdrop-filter: blur(16px);
+    color: #4d4d47;
+  }
+  .toolbar-title, .toolbar-actions { display: flex; align-items: center; }
+  .toolbar-title { gap: 10px; min-width: 0; }
+  .toolbar-title strong { color: #1f201d; font-size: 15px; }
+  .toolbar-title > span:last-of-type { color: #67645c; font-size: 12px; }
+  .toolbar-folder { display: grid; place-items: center; width: 26px; height: 26px; color: #9f3f2a; font-size: 20px; }
+  .toolbar-divider { color: #b8aea1; }
+  .toolbar-actions { gap: 8px; margin-left: auto; }
+  .sync-state { display: flex; align-items: center; color: #67645c; font-size: 11px; }
+
+  .toolbar-search, .icon-button {
+    min-height: 34px;
+    border: 1px solid #ded6cb;
+    background: rgba(255, 253, 249, .68);
+    color: #4d4d47;
+    font-size: 11px;
+  }
+  .toolbar-search { display: flex; align-items: center; gap: 9px; padding: 0 9px 0 11px; }
+  .toolbar-search:hover, .icon-button:hover { background: #fffdf9; border-color: #cfc3b4; }
+  .icon-button { display: grid; place-items: center; width: 34px; padding: 0; }
+
+  button {
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid #ded6cb;
+    border-radius: 9px;
+    background: #fffdf9;
+    color: #34342f;
+    font-size: 11px;
+    font-weight: 680;
+    transition: transform .12s, background .16s, border-color .16s, box-shadow .16s;
+  }
+  button:hover { border-color: #c8b9aa; }
+  button:active { transform: scale(.97); }
+  button.accent { border-color: #df6a4b; background: #df6a4b; color: #30140d; }
+  button.accent:hover { background: #e6785b; }
+
+  .content { max-width: 1440px; margin: auto; padding: 31px 30px 60px; }
+
+  /* Bento Overview Dashboard */
+  .overview-bento {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .overview-card {
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid rgba(126, 105, 83, .15);
+    border-radius: 18px;
+    background: #fffdf9;
+    box-shadow: 0 1px 2px rgba(48, 38, 27, .07), 0 8px 22px rgba(48, 38, 27, .05);
+  }
+  .overview-card .tile-title { margin: 0; padding: 18px 20px 11px; }
+  .overview-card .tile-title > span { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 720; }
+  .overview-card .tile-title small { color: #67645c; font-size: 10px; }
+  
+  .overview-common { grid-column: span 7; min-height: 250px; }
+  .overview-running { grid-column: span 5; min-height: 250px; background: #242421; color: #fffdf9; }
+  .overview-running .tile-title small { color: rgba(255, 253, 249, .52); }
+  .overview-running .tile-title > span i {
+    width: 7px; height: 7px; border-radius: 50%; background: #65c98d; box-shadow: 0 0 0 4px rgba(101, 201, 141, .12);
+  }
+
+  .overview-workspace { grid-column: span 12; min-height: 140px; padding: 20px 24px; background: #f2d6c9; }
+  .workspace-card-head { display: flex; align-items: center; justify-content: space-between; }
+  .workspace-card-head span { color: #7f4939; font-size: 13px; font-weight: 760; }
+  .workspace-card-head strong { color: #3a241c; font-size: 38px; letter-spacing: -.06em; line-height: 1; }
+
+  .category-stats {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .category-stats button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 38px;
+    padding: 0 14px;
+    border-color: rgba(128, 87, 71, .18);
+    border-radius: 9px;
+    background: rgba(255, 253, 249, .55);
+    color: #725348;
+    font-size: 12px;
+  }
+  .category-stats button:hover, .category-stats button.active {
+    background: #fffaf7;
+    border-color: rgba(128, 87, 71, .35);
+  }
+  .category-stats b { color: #9f3f2a; font-size: 13px; }
+
+  /* Tool List Rows & Cards */
+  .collection-head {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin: 35px 0 16px;
+  }
+  .collection-head span { color: #1f201d; font-size: 24px; font-weight: 800; letter-spacing: -.025em; }
+  .collection-head small { color: #67645c; font-size: 13px; margin-top: 4px; display: block; }
+
+  .tool-list {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .tool-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    grid-template-rows: auto auto 1fr auto;
+    gap: 0 12px;
+    min-height: 220px;
+    padding: 20px;
+    border: 1px solid rgba(126, 105, 83, .15);
+    border-radius: 18px;
+    background: #fffdf9;
+    box-shadow: 0 1px 2px rgba(48, 38, 27, .07), 0 8px 22px rgba(48, 38, 27, .05);
+    transition: transform .18s, box-shadow .18s;
+  }
+  .tool-row:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 10px rgba(48, 38, 27, .08), 0 16px 34px rgba(48, 38, 27, .08);
+  }
+
+  .item-mark {
+    display: grid;
+    grid-row: span 2;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 12px;
+    background: #242421;
+    color: #fffdf9;
+    font-size: 11px;
+    font-weight: 780;
+  }
+  .mark-tool { background: #df6a4b; color: #30140d; }
+  .mark-project { background: #e7e7d8; color: #4b5235; }
+  .mark-prototype { background: #dce9e8; color: #396869; }
+  .mark-resource { background: #e7e2ef; color: #635177; }
+
+  .tool-copy { min-width: 0; }
+  .tool-copy strong {
+    display: block;
+    overflow: hidden;
+    color: #1f201d;
+    font-size: 17px;
+    letter-spacing: -.015em;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tool-copy small {
+    display: block;
+    margin-top: 4px;
+    overflow: hidden;
+    color: #67645c;
+    font-size: 12px;
+    line-height: 1.45;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .row-tags {
+    grid-column: 1 / -1;
+    display: flex;
+    align-self: start;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 18px;
+  }
+  .row-tags span {
+    padding: 4px 8px;
+    border-radius: 6px;
+    background: #f8f3eb;
+    color: #67645c;
+    font-size: 11px;
+    font-weight: 650;
+  }
+
+  .row-state {
+    grid-column: 1 / 2;
+    align-self: end;
+    width: max-content;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: rgba(31, 32, 29, .065);
+    color: #6b6962;
+    font-size: 11px;
+    font-weight: 680;
+  }
+  .row-state:before {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    content: "";
+  }
+  .row-state.is-running { background: #e3f1e8; color: #2f8f5b; }
+
+  .row-open {
+    position: absolute;
+    right: 20px;
+    bottom: 20px;
+    display: flex;
     align-items: center;
     gap: 6px;
+    min-height: 34px;
+    text-decoration: none;
   }
 
-  .dot-ping {
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--accent-emerald);
-    box-shadow: 0 0 8px var(--accent-emerald);
-  }
-
-  /* Controls Section */
-  .controls {
-    display: flex;
-    gap: 16px;
-    margin-bottom: 32px;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-  }
-
-  .search-box {
-    position: relative;
-    flex: 1;
-    min-width: 280px;
-    max-width: 480px;
-  }
-
-  .search-box input {
-    width: 100%;
-    background: var(--bg-card);
-    border: 1px solid var(--border-card);
-    border-radius: 12px;
-    padding: 12px 16px 12px 44px;
-    color: var(--text-primary);
-    font-size: 14px;
-    outline: none;
-    transition: all 0.2s ease;
-    backdrop-filter: blur(10px);
-  }
-
-  .search-box input:focus {
-    border-color: var(--accent-indigo);
-    box-shadow: 0 0 0 4px var(--glow-indigo);
-  }
-
-  .search-box svg {
-    position: absolute;
-    left: 14px;
-    top: 50%;
-    transform: translateY(-50%);
-    width: 18px; height: 18px;
-    stroke: var(--text-muted);
-  }
-
-  .category-pills {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-
-  .pill {
-    background: var(--bg-card);
-    border: 1px solid var(--border-card);
-    color: var(--text-secondary);
-    padding: 8px 16px;
-    border-radius: 10px;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.2s ease;
-  }
-
-  .pill:hover, .pill.active {
-    background: var(--accent-indigo);
-    border-color: var(--accent-indigo);
-    color: #fff;
-    box-shadow: 0 4px 12px var(--glow-indigo);
-  }
-
-  /* Grid */
-  .grid {
+  /* Compact List inside Bento */
+  .compact-list { display: grid; gap: 6px; padding: 0 14px 14px; }
+  .compact-list .tool-row {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-    gap: 20px;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    grid-template-rows: auto;
+    min-height: 52px;
+    padding: 8px 12px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: rgba(255, 253, 249, .66);
+    box-shadow: none;
+    transform: none;
+  }
+  .compact-list .tool-row:hover {
+    border-color: #ded6cb;
+    background: #fffdf9;
+  }
+  .compact-list .item-mark { grid-row: auto; width: 36px; height: 36px; border-radius: 9px; font-size: 9px; }
+  .compact-list .tool-copy strong { font-size: 13px; }
+  .compact-list .tool-copy small { margin-top: 2px; font-size: 10px; }
+  .compact-list .row-tags, .compact-list .row-state { display: none; }
+  .compact-list .row-open {
+    position: static;
+    min-height: 30px;
+    padding: 0 10px;
+    border: 1px solid #ded6cb;
+    background: #fffdf9;
+    color: #34342f;
+    font-size: 11px;
   }
 
-  .card {
-    background: var(--bg-card);
-    border: 1px solid var(--border-card);
-    border-radius: 16px;
-    padding: 24px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    backdrop-filter: blur(12px);
-    position: relative;
+  /* Command Palette Modal (⌘ K) */
+  .modal-backdrop {
+    position: fixed;
+    z-index: 50;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    padding: 22px;
+    background: rgba(36, 36, 33, .38);
+  }
+  .palette-backdrop {
+    align-items: start;
+    padding-top: 12vh;
+    backdrop-filter: blur(4px);
+  }
+  .command-palette {
+    width: min(640px, 100%);
     overflow: hidden;
+    border: 1px solid #ded6cb;
+    border-radius: 18px;
+    background: #fffdf9;
+    box-shadow: 0 22px 70px rgba(32, 29, 25, .28);
+  }
+  .palette-search {
+    display: grid;
+    grid-template-columns: 25px 1fr auto;
+    gap: 8px;
+    align-items: center;
+    padding: 15px 18px;
+    border-bottom: 1px solid #e4ddd3;
+    color: #9f3f2a;
+  }
+  .palette-search input {
+    width: 100%;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: #1f201d;
+    font-size: 16px;
+  }
+  .palette-caption {
+    display: flex;
+    justify-content: space-between;
+    padding: 11px 18px 7px;
+    color: #82786c;
+    font-size: 11px;
+  }
+  .palette-results {
+    display: grid;
+    max-height: 380px;
+    overflow-y: auto;
+    padding: 0 11px 11px;
+  }
+  .palette-results > a {
+    display: grid;
+    grid-template-columns: 32px 1fr 22px;
+    gap: 10px;
+    align-items: center;
+    min-height: 52px;
+    padding: 8px 10px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    text-align: left;
     text-decoration: none;
     color: inherit;
   }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, var(--card-accent, var(--accent-indigo)), var(--accent-purple));
-    opacity: 0;
-    transition: opacity 0.25s ease;
+  .palette-results > a:hover, .palette-results > a.palette-active {
+    background: #f8f3eb;
   }
+  .palette-results .item-mark { width: 30px; height: 30px; border-radius: 9px; font-size: 8px; }
+  .palette-results strong { display: block; font-size: 13px; color: #1f201d; }
+  .palette-results small { display: block; margin-top: 2px; color: #67645c; font-size: 10px; }
 
-  .card:hover {
-    transform: translateY(-4px);
-    border-color: var(--border-hover);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
-    background: var(--bg-card-hover);
+  /* Responsive Rules matching desktop app */
+  @media(max-width:1120px) {
+    .tool-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .overview-common { grid-column: span 6; }
+    .overview-running { grid-column: span 6; }
+    .category-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
-
-  .card:hover::before { opacity: 1; }
-
-  .card-header {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-    margin-bottom: 14px;
-  }
-
-  .card-avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 10px;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--card-accent, var(--accent-indigo));
-    flex-shrink: 0;
-  }
-
-  .card-meta h2 {
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--text-primary);
-    line-height: 1.3;
-  }
-
-  .card-meta .tag-list {
-    display: flex;
-    gap: 6px;
-    margin-top: 6px;
-    flex-wrap: wrap;
-  }
-
-  .tag {
-    font-size: 11px;
-    font-weight: 500;
-    padding: 2px 8px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-secondary);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-  }
-
-  .card-desc {
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.5;
-    margin-bottom: 20px;
-    flex-grow: 1;
-  }
-
-  .card-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding-top: 14px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--card-accent, var(--accent-indigo));
-  }
-
-  .card-footer svg {
-    width: 16px; height: 16px;
-    stroke: currentColor;
-    transition: transform 0.2s ease;
-  }
-
-  .card:hover .card-footer svg {
-    transform: translateX(4px);
-  }
-
-  /* Empty state */
-  .empty-state {
-    grid-column: 1 / -1;
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--text-muted);
-  }
-
-  footer {
-    margin-top: 60px;
-    text-align: center;
-    font-size: 12px;
-    color: var(--text-muted);
+  @media(max-width:900px) {
+    body { min-width: 0; }
+    .app-shell { grid-template-columns: 74px 1fr; }
+    .sidebar { padding: 32px 8px 18px; }
+    .brand { justify-content: center; }
+    .brand span, .command-trigger span, .command-trigger kbd, .nav-label, nav button span, .side-foot { display: none; }
+    .command-trigger { justify-content: center; }
+    nav button { justify-content: center; }
+    .content { padding: 20px 16px 40px; }
+    .tool-list { grid-template-columns: 1fr; }
+    .overview-common, .overview-running { grid-column: span 12; }
   }
 </style>
 </head>
 <body>
-  <div class="container">
-    <header>
-      <div class="brand-group">
-        <div class="brand-icon">
-          <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="brand-title">
-          <h1>Tool Hub · 静态原型库</h1>
-          <p>云端单页工具、产品原型与交互测试集中管理</p>
-        </div>
+
+<div class="app-shell">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="brand">
+      <b>
+        <svg className="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="4" y="4" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/>
+          <rect x="14" y="4" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/>
+          <rect x="4" y="14" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/>
+          <rect x="14" y="14" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/>
+        </svg>
+      </b>
+      <span>
+        <strong>Tool Hub</strong>
+        <small>CLOUD LAUNCHER</small>
+      </span>
+    </div>
+
+    <button class="command-trigger" id="sidebarSearchBtn">
+      <span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="5.5"/><path d="m15.1 15.1 4.1 4.1"/></svg>
+        搜索或输入命令
+      </span>
+      <kbd>⌘ K</kbd>
+    </button>
+
+    <p class="nav-label">工作区</p>
+    <nav id="navGroup">
+      <button class="nav-active" data-section="home">
+        <span>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.8" y="4" width="16.4" height="16" rx="2"/><path d="M3.8 10h16.4M10 10v10"/></svg>
+          概览
+        </span>
+      </button>
+      <button data-section="tool">
+        <span>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 5.1a4.4 4.4 0 0 0-5.5 5.5L4.4 15.4a2.1 2.1 0 1 0 3 3l4.8-4.8a4.4 4.4 0 0 0 5.5-5.5l-3.1 3.1-2.5-2.5Z"/></svg>
+          工具
+        </span>
+        <em>2</em>
+      </button>
+      <button data-section="prototype">
+        <span>
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.7" y="4.4" width="16.6" height="15.2" rx="2"/><path d="M9.1 4.7v14.6M9.1 10.1h10.7"/></svg>
+          原型
+        </span>
+        <em>5</em>
+      </button>
+    </nav>
+
+    <div class="side-foot">
+      <i></i>云端就绪<br/>
+      <small>7 个入口 · GitHub Pages 托管</small>
+    </div>
+  </aside>
+
+  <!-- Workspace Area -->
+  <main class="workspace">
+    <header class="app-toolbar">
+      <div class="toolbar-title">
+        <span class="toolbar-folder">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.8 7.8c0-1.1.9-2 2-2h4l1.7 2H18c1.2 0 2 .8 2 2v7.4c0 1.1-.8 2-2 2H5.8c-1.1 0-2-.9-2-2Z"/></svg>
+        </span>
+        <strong>工作台</strong>
+        <span class="toolbar-divider">/</span>
+        <span id="currentSectionTitle">今日概览</span>
       </div>
-      <div class="header-badge">
-        <span class="dot-ping"></span> GitHub Pages 云端服务运行中
+
+      <div class="toolbar-actions">
+        <span class="sync-state"><i></i> 云端已同步</span>
+        <button class="toolbar-search" id="topSearchBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="5.5"/><path d="m15.1 15.1 4.1 4.1"/></svg>
+          搜索 <kbd>⌘ K</kbd>
+        </button>
+        <button class="icon-button" aria-label="刷新入口状态" onclick="window.location.reload()">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0 2.1 5.4"/><path d="M20 4v7h-7"/></svg>
+        </button>
       </div>
     </header>
 
-    <div class="controls">
-      <div class="search-box">
-        <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <input type="text" id="searchInput" placeholder="搜索原型名称、关键词或标签...">
-      </div>
-      <div class="category-pills" id="categoryPills">
-        <button class="pill active" data-cat="all">全部原型 (7)</button>
-        <button class="pill" data-cat="tool">单页工具</button>
-        <button class="pill" data-cat="prototype">交互原型</button>
-        <button class="pill" data-cat="iot">IoT 控制台</button>
+    <div class="content">
+      <!-- Bento Dashboard Overview -->
+      <section class="overview-bento" id="overviewBento">
+        <article class="overview-card overview-common">
+          <div class="tile-title">
+            <span>常用入口</span>
+            <small>常用工具 · 快捷跳转</small>
+          </div>
+          <div class="compact-list" id="compactFavorites">
+            <!-- Rendered by JS -->
+          </div>
+        </article>
+
+        <article class="overview-card overview-running">
+          <div class="tile-title">
+            <span><i></i> 状态概览</span>
+            <small>GitHub Pages 托管中</small>
+          </div>
+          <div class="compact-list" id="compactRunning">
+            <!-- Rendered by JS -->
+          </div>
+        </article>
+
+        <article class="overview-card overview-workspace">
+          <div class="workspace-card-head">
+            <span>已收录云端入口</span>
+            <strong>7</strong>
+          </div>
+          <div class="category-stats" id="categoryStats">
+            <button class="active" data-cat="all"><span>全部入口</span><b>7</b></button>
+            <button data-cat="tool"><span>单页工具</span><b>2</b></button>
+            <button data-cat="prototype"><span>交互原型</span><b>5</b></button>
+            <button data-cat="iot"><span>IoT 模块</span><b>3</b></button>
+          </div>
+        </article>
+      </section>
+
+      <!-- Main Collection List -->
+      <section class="collection-head">
+        <div>
+          <span id="collectionTitle">所有入口</span>
+          <small>单页工具与交互原型，点击即可在任意设备上直接运行</small>
+        </div>
+      </section>
+
+      <div class="tool-list" id="toolGrid">
+        <!-- Rendered by JS -->
       </div>
     </div>
+  </main>
+</div>
 
-    <div class="grid" id="toolsGrid">
-      <!-- Cards rendered via JavaScript -->
+<!-- Command Palette Modal (⌘ K) -->
+<div class="modal-backdrop palette-backdrop" id="paletteModal" style="display: none;">
+  <section class="command-palette" onclick="event.stopPropagation()">
+    <div class="palette-search">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="5.5"/><path d="m15.1 15.1 4.1 4.1"/></svg>
+      <input type="text" id="paletteInput" placeholder="搜索工具、原型、标签…" />
+      <kbd>ESC</kbd>
     </div>
-
-    <footer>
-      Tool Hub Cloud Hub · 托管于 GitHub Pages · 随处即用
-    </footer>
-  </div>
+    <div class="palette-caption">
+      <span>检索结果与可用入口</span>
+      <small>↵ 打开</small>
+    </div>
+    <div class="palette-results" id="paletteResults">
+      <!-- Rendered by JS -->
+    </div>
+  </section>
+</div>
 
 <script>
   const items = [
     {
       id: 'json-check',
       name: 'JSON Check',
-      desc: 'JSON 格式化、智能校验、实时修复与视图调试工具。',
+      desc: 'JSON 格式化、校验与自动修复调试工具',
       category: 'tool',
+      mode: 'static',
+      markClass: 'mark-tool',
+      markText: 'JS',
       tags: ['JSON', '调试', '格式化'],
-      url: 'prototypes/json-check.html',
-      accent: '#6366f1'
+      url: 'prototypes/json-check.html'
     },
     {
       id: 'skills-manager',
       name: 'Skills Manager',
-      desc: 'Agent Skills 本地与云端资源管理控制台单页。',
+      desc: 'Agent Skills 本地与云端资源管理控制台单页',
       category: 'tool',
+      mode: 'static',
+      markClass: 'mark-tool',
+      markText: 'SK',
       tags: ['Skills', 'Agent', '管理'],
-      url: 'prototypes/skills-manager.html',
-      accent: '#06b6d4'
+      url: 'prototypes/skills-manager.html'
     },
     {
-      id: 'iot-attribute',
+      id: 'iot-attribute-frontend',
       name: 'IoT 设备属性前端',
-      desc: '茶饮机/设备属性状态轻量前端展示与交互原型。',
-      category: 'iot',
-      tags: ['IoT', '属性', '设备'],
-      url: 'prototypes/iot-attribute-frontend.html',
-      accent: '#10b981'
+      desc: '茶饮机设备属性轻量前端交互原型',
+      category: 'prototype',
+      mode: 'static',
+      markClass: 'mark-prototype',
+      markText: 'IO',
+      tags: ['IoT', '属性', '原型'],
+      url: 'prototypes/iot-attribute-frontend.html'
     },
     {
       id: 'kira-omega',
       name: 'KIRA OMEGA IoT',
-      desc: 'IoT 专业透视控制中心与高阶可视化监控原型。',
-      category: 'iot',
+      desc: 'IoT 专业透视控制中心监控原型',
+      category: 'prototype',
+      mode: 'static',
+      markClass: 'mark-prototype',
+      markText: 'KI',
       tags: ['IoT', '控制台', '单页'],
-      url: 'prototypes/kira-omega.html',
-      accent: '#a855f7'
+      url: 'prototypes/kira-omega.html'
     },
     {
       id: 'calibration-training',
       name: '自动校准功能培训',
-      desc: '设备自动校准流程培训、演示与 Bento 结构化说明。',
+      desc: '自动校准培训与演示 Bento 结构页面',
       category: 'prototype',
+      mode: 'static',
+      markClass: 'mark-prototype',
+      markText: '校准',
       tags: ['校准', '培训', '演示'],
-      url: 'prototypes/calibration-training.html',
-      accent: '#f59e0b'
+      url: 'prototypes/calibration-training.html'
     },
     {
       id: 'data-refresh',
       name: '数据刷新原型',
-      desc: '设备数据刷新页面复刻与数据重载状态原型。',
+      desc: '设备数据刷新页面复刻与重载原型',
       category: 'prototype',
+      mode: 'static',
+      markClass: 'mark-prototype',
+      markText: '数据',
       tags: ['数据刷新', '静态原型'],
-      url: 'prototypes/data-refresh/index.html',
-      accent: '#3b82f6'
+      url: 'prototypes/data-refresh/index.html'
     },
     {
       id: 'iot-3d-demo',
       name: 'IoT 3D 热区测试',
-      desc: '设备 3D 结构模块渲染与热区感知交互测试。',
+      desc: '设备 3D 模块与热区交互测试原型',
       category: 'prototype',
+      mode: 'static',
+      markClass: 'mark-prototype',
+      markText: '3D',
       tags: ['3D', 'IoT', '热区'],
-      url: 'prototypes/iot-3d-demo/index.html',
-      accent: '#ec4899'
+      url: 'prototypes/iot-3d-demo/index.html'
     }
   ];
 
-  let activeCat = 'all';
+  let currentCategory = 'all';
   let searchQuery = '';
 
-  function render() {
-    const grid = document.getElementById('toolsGrid');
+  function renderGrid() {
+    const toolGrid = document.getElementById('toolGrid');
     const filtered = items.filter(item => {
-      const matchCat = activeCat === 'all' || item.category === activeCat;
+      const matchCat = currentCategory === 'all' || 
+                       (currentCategory === 'tool' && item.category === 'tool') ||
+                       (currentCategory === 'prototype' && item.category === 'prototype') ||
+                       (currentCategory === 'iot' && item.tags.includes('IoT'));
       const haystack = (item.name + ' ' + item.desc + ' ' + item.tags.join(' ')).toLowerCase();
       const matchSearch = !searchQuery || haystack.includes(searchQuery.toLowerCase());
       return matchCat && matchSearch;
     });
 
     if (filtered.length === 0) {
-      grid.innerHTML = `<div class="empty-state">没有找到匹配的工具或原型</div>`;
+      toolGrid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: #67645c;">暂无符合条件的云端入口</div>`;
       return;
     }
 
-    grid.innerHTML = filtered.map(item => `
-      <a href="${item.url}" class="card" style="--card-accent: ${item.accent}">
-        <div>
-          <div class="card-header">
-            <div class="card-avatar">${item.name.slice(0, 2)}</div>
-            <div class="card-meta">
-              <h2>${item.name}</h2>
-              <div class="tag-list">
-                ${item.tags.map(t => `<span class="tag">${t}</span>`).join('')}
-              </div>
-            </div>
-          </div>
-          <div class="card-desc">${item.desc}</div>
+    toolGrid.innerHTML = filtered.map(item => `
+      <div class="tool-row">
+        <span class="item-mark ${item.markClass}">${item.markText}</span>
+        <div class="tool-copy">
+          <strong>${item.name}</strong>
+          <small>${item.desc}</small>
         </div>
-        <div class="card-footer">
-          <span>直接运行原型</span>
-          <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        <div class="row-tags">
+          ${item.tags.map(tag => `<span>${tag}</span>`).join('')}
         </div>
+        <span class="row-state">已就绪</span>
+        <a href="${item.url}" class="row-open accent" target="_self">
+          打开
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
+        </a>
+      </div>
+    `).join('');
+  }
+
+  function renderCompactLists() {
+    const favoritesList = document.getElementById('compactFavorites');
+    const runningList = document.getElementById('compactRunning');
+
+    favoritesList.innerHTML = items.slice(0, 3).map(item => `
+      <div class="tool-row">
+        <span class="item-mark ${item.markClass}">${item.markText}</span>
+        <div class="tool-copy">
+          <strong>${item.name}</strong>
+          <small>${item.desc}</small>
+        </div>
+        <a href="${item.url}" class="row-open">打开</a>
+      </div>
+    `).join('');
+
+    runningList.innerHTML = items.slice(2, 5).map(item => `
+      <div class="tool-row">
+        <span class="item-mark ${item.markClass}">${item.markText}</span>
+        <div class="tool-copy">
+          <strong>${item.name}</strong>
+          <small>${item.desc}</small>
+        </div>
+        <a href="${item.url}" class="row-open">浏览</a>
+      </div>
+    `).join('');
+  }
+
+  // Category Filtering
+  document.getElementById('categoryStats').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('#categoryStats button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentCategory = btn.dataset.cat;
+    renderGrid();
+  });
+
+  document.getElementById('navGroup').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    document.querySelectorAll('#navGroup button').forEach(b => b.classList.remove('nav-active'));
+    btn.classList.add('nav-active');
+    const section = btn.dataset.section;
+    currentCategory = section === 'home' ? 'all' : section;
+    document.getElementById('currentSectionTitle').innerText = btn.innerText.trim();
+    renderGrid();
+  });
+
+  // Command Palette Handlers
+  const paletteModal = document.getElementById('paletteModal');
+  const paletteInput = document.getElementById('paletteInput');
+  const paletteResults = document.getElementById('paletteResults');
+
+  function openPalette() {
+    paletteModal.style.display = 'grid';
+    paletteInput.value = '';
+    paletteInput.focus();
+    renderPaletteResults('');
+  }
+
+  function closePalette() {
+    paletteModal.style.display = 'none';
+  }
+
+  function renderPaletteResults(query) {
+    const filtered = items.filter(item => {
+      const haystack = (item.name + ' ' + item.desc + ' ' + item.tags.join(' ')).toLowerCase();
+      return !query || haystack.includes(query.toLowerCase());
+    });
+
+    paletteResults.innerHTML = filtered.map(item => `
+      <a href="${item.url}">
+        <span class="item-mark ${item.markClass}">${item.markText}</span>
+        <span>
+          <strong>${item.name}</strong>
+          <small>${item.desc}</small>
+        </span>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
       </a>
     `).join('');
   }
 
-  document.getElementById('searchInput').addEventListener('input', e => {
-    searchQuery = e.target.value;
-    render();
+  document.getElementById('sidebarSearchBtn').addEventListener('click', openPalette);
+  document.getElementById('topSearchBtn').addEventListener('click', openPalette);
+  paletteModal.addEventListener('click', closePalette);
+
+  paletteInput.addEventListener('input', e => {
+    renderPaletteResults(e.target.value);
   });
 
-  document.getElementById('categoryPills').addEventListener('click', e => {
-    if (e.target.classList.contains('pill')) {
-      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
-      e.target.classList.add('active');
-      activeCat = e.target.dataset.cat;
-      render();
+  window.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      openPalette();
+    }
+    if (e.key === 'Escape') {
+      closePalette();
     }
   });
 
-  render();
+  renderGrid();
+  renderCompactLists();
 </script>
+
 </body>
 </html>
