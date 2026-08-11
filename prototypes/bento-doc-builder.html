@@ -762,7 +762,7 @@
 <header>
   <div class="header-brand">
     <b>🍱</b>
-    <h1>Bento Doc Builder <span class="card-count-badge" id="cardCountBadge">7 张卡片</span></h1>
+    <h1>Bento Doc Builder <span class="card-count-badge" id="cardCountBadge">6 张卡片</span></h1>
   </div>
   <div class="header-actions">
     <button onclick="toggleTheme()">🌓 主题</button>
@@ -811,7 +811,7 @@
 
 <!-- Onboarding Hint Banner -->
 <div class="onboarding-banner" id="hintBanner">
-  <span>💡 新功能：点击顶部 <b>✨ 文本生成排版</b> 粘贴大段文本草稿，1秒自动平衡组装 Bento 排版！支持 <b>⠿ 把手</b> 拖拽。</span>
+  <span>💡 提示：点击 <b>✨ 文本生成排版</b> 粘贴大段文本草稿，1秒自动平衡组装 Bento 排版！支持 <b>⠿ 把手</b> 拖拽。</span>
   <button onclick="document.getElementById('hintBanner').style.display='none'">✕</button>
 </div>
 
@@ -823,7 +823,7 @@
       <span class="tag-badge" contenteditable="true" onblur="saveState()">IoT 平台 v2.4</span>
       <span class="tag-badge" contenteditable="true" onblur="saveState()">茶饮机/咖啡机专有</span>
     </div>
-    <div class="doc-title" contenteditable="true" id="docTitle" onblur="saveState()">茶饮机全自动校准 PRD (上线说明文档)</div>
+    <div class="doc-title" contenteditable="true" id="docTitle" onblur="saveState()">茶饮机自动校准与出料优化 PRD</div>
     <div class="doc-subtitle" contenteditable="true" id="docSubtitle" onblur="saveState()">实现多料仓脉冲精确扣减、出料误差动态补偿算法与闭环 CIP 清洗提醒功能。</div>
   </section>
 
@@ -842,8 +842,8 @@
       type: 'metric',
       span: 'span-05x',
       dark: false,
-      kicker: 'PRECISION',
-      title: '出料精度',
+      kicker: 'CORE METRIC',
+      title: '出料精度升至',
       number: '99.8%',
       body: '误差降低至 0.02g。'
     },
@@ -852,61 +852,55 @@
       type: 'metric',
       span: 'span-05x',
       dark: false,
-      kicker: 'SPEED',
-      title: '校准耗时',
+      kicker: 'CORE METRIC',
+      title: '校准耗时仅',
       number: '12s',
-      body: '支持一键自动基线下发。'
+      body: '支持自动基线下发。'
     },
     {
       id: 'c3',
-      type: 'code',
-      span: 'span-075x',
-      dark: true,
-      kicker: 'SPEC PROTOCOL',
-      title: 'MQTT 属性协议',
-      body: '平台与上位机通信 JSON：',
-      code: '{\n  "device_id": "TEA-09",\n  "pulse": 450,\n  "status": 1\n}'
-    },
-    {
-      id: 'c4',
       type: 'diff',
       span: 'span-2x1',
       dark: false,
       kicker: 'ALGORITHM COMPARISON',
-      title: '出料扣减算法新旧对比',
-      body: '展示新版脉冲反馈补偿与旧版固定时间扣减的核心差异：',
-      oldText: '❌ 旧逻辑：按定时器固定毫秒扣减，产生高达 8% 的偏差。',
-      newText: '✅ 新逻辑：按传感器脉冲实时闭环，支持动态衰减补偿。'
+      title: '算法新旧对比',
+      body: '展示动态补偿与定时扣减核心区别：',
+      oldText: '❌ 旧逻辑：按定时器固定毫秒扣减，原料密度变化时产生高达 8% 的累计偏差。',
+      newText: '✅ 新逻辑：按传感器脉冲实时闭环，支持按气温与损耗系数动态做算法衰减补偿。'
+    },
+    {
+      id: 'c4',
+      type: 'code',
+      span: 'span-075x',
+      dark: true,
+      kicker: 'SPEC PROTOCOL',
+      title: 'MQTT 属性协议规范',
+      body: '平台与设备通讯 JSON：',
+      code: '{\n  "device_id": "TEA-MAKER-09",\n  "silo_id": 3,\n  "pulse_count": 450,\n  "status": 1\n}'
     },
     {
       id: 'c5',
-      type: 'graphic',
-      span: 'span-1x2',
-      dark: false,
-      kicker: 'PROTOTYPE SCREENSHOT',
-      title: '设备交互与校准界面原型',
-      body: '点击或拖拽上传原型截图，方便直观展示 UI 布局：',
-      imageUrl: ''
-    },
-    {
-      id: 'c6',
       type: 'notice',
       span: 'span-075x',
       dark: false,
-      kicker: 'BOUNDARY',
-      title: '缺料预警限制',
-      body: '余量低于 15% 时触发：',
-      alert: '⚠️ 自动向 POS 侧广播“低余量”提示，不中断出杯。'
+      kicker: 'BOUNDARY & WARNING',
+      title: '注意事项与限制',
+      body: '缺料触发机制：',
+      alert: '⚠️ 注意：缺料告警触发后，系统自动向 POS 侧广播“低余量”提示，但不会中断当前正在进行的出杯。'
     },
     {
-      id: 'c7',
+      id: 'c6',
       type: 'timeline',
       span: 'span-075x',
       dark: false,
       kicker: 'TIMELINE',
-      title: '发布里程碑规划',
-      body: '灰度与上线节点：',
-      timelineItems: ['2026-08-15: 需求评审完成', '2026-08-20: 灰度 5 台连锁门店', '2026-08-30: 全国门店全量上线']
+      title: '发布里程碑',
+      body: '节点计划：',
+      timelineItems: [
+        '2026-08-15: 需求评审与架构确认',
+        '2026-08-20: 灰度 5 台连锁门店试运行',
+        '2026-08-30: 全国门店全量上线'
+      ]
     }
   ];
 
@@ -1043,13 +1037,12 @@ MQTT 属性协议规范：
     if (!rawText) return;
 
     const lines = rawText.split('\n');
-    let title = '新建 Bento 文档方案';
-    let subtitle = '智能自动排版生成';
+    let title = '';
+    let subtitle = '';
     const parsedCards = [];
 
-    let currentSection = null;
-    let codeAccumulator = [];
     let isInsideCode = false;
+    let codeBuffer = [];
 
     lines.forEach((line) => {
       const trimmed = line.trim();
@@ -1060,17 +1053,17 @@ MQTT 属性协议规范：
         return;
       }
 
-      if (parsedCards.length === 0 && !title && !trimmed.includes(':')) {
+      if (!title && !trimmed.includes(':') && !trimmed.includes('：')) {
         title = trimmed;
         return;
       }
 
-      if (parsedCards.length === 0 && subtitle === '智能自动排版生成' && !trimmed.includes(':')) {
+      if (title && !subtitle && !trimmed.includes(':') && !trimmed.includes('：')) {
         subtitle = trimmed;
         return;
       }
 
-      // Code Block Detection
+      // JSON / Code Block Parsing
       if (trimmed.startsWith('```')) {
         if (isInsideCode) {
           parsedCards.push({
@@ -1080,10 +1073,10 @@ MQTT 属性协议规范：
             dark: true,
             kicker: 'SPEC PROTOCOL',
             title: '代码/协议规范',
-            body: '自动解析的协议数据：',
-            code: codeAccumulator.join('\n')
+            body: '自动解析的协议规范：',
+            code: codeBuffer.join('\n')
           });
-          codeAccumulator = [];
+          codeBuffer = [];
           isInsideCode = false;
         } else {
           isInsideCode = true;
@@ -1092,7 +1085,7 @@ MQTT 属性协议规范：
       }
 
       if (isInsideCode) {
-        codeAccumulator.push(line);
+        codeBuffer.push(line);
         return;
       }
 
@@ -1103,28 +1096,27 @@ MQTT 属性协议规范：
           span: 'span-075x',
           dark: true,
           kicker: 'SPEC PROTOCOL',
-          title: 'JSON 协议数据',
-          body: '自动解析的 JSON 内容：',
+          title: 'MQTT 属性协议规范',
+          body: '平台与设备通讯 JSON：',
           code: trimmed
         });
         return;
       }
 
-      // Metric Detection (Numbers with units)
-      const metricMatch = trimmed.match(/(.*?)[：:]\s*(.*?(\d+(\.\d+)?(%|s|ms|g|kg|台|个|ms)).*)/);
-      if (metricMatch || trimmed.includes('99.') || trimmed.includes('12s')) {
-        const parts = trimmed.split(/[：:]/);
+      // Metric Detection
+      if (trimmed.includes('99.8%') || trimmed.includes('12s') || trimmed.match(/\d+(\.\d+)?(%|s|ms|g|kg)/)) {
+        const parts = trimmed.replace(/^[-*]\s*/, '').split(/[（(：:]/);
         const cardTitle = parts[0] || '核心指标';
-        const numMatch = trimmed.match(/\d+(\.\d+)?(%|s|ms|g|kg|台|个)?/);
+        const numMatch = trimmed.match(/\d+(\.\d+)?(%|s|ms|g|kg)/);
         parsedCards.push({
           id: 'c' + Date.now() + Math.random(),
           type: 'metric',
           span: 'span-05x',
           dark: false,
-          kicker: 'METRIC',
-          title: cardTitle.replace(/^[-*]\s*/, ''),
+          kicker: 'CORE METRIC',
+          title: cardTitle.trim(),
           number: numMatch ? numMatch[0] : '100%',
-          body: parts[1] || trimmed
+          body: parts[1] ? parts[1].replace(/[）)]/g, '') : trimmed
         });
         return;
       }
@@ -1138,9 +1130,9 @@ MQTT 属性协议规范：
             type: 'diff',
             span: 'span-2x1',
             dark: false,
-            kicker: 'COMPARISON',
-            title: '规则逻辑对比',
-            body: '新旧版本对比规则：',
+            kicker: 'ALGORITHM COMPARISON',
+            title: '算法新旧对比',
+            body: '展示动态补偿与定时扣减核心区别：',
             oldText: '❌ 旧逻辑：未指定',
             newText: '✅ 新逻辑：未指定'
           };
@@ -1158,16 +1150,16 @@ MQTT 属性协议规范：
           type: 'notice',
           span: 'span-075x',
           dark: false,
-          kicker: 'BOUNDARY',
+          kicker: 'BOUNDARY & WARNING',
           title: '注意事项与限制',
-          body: '关键约束条件：',
+          body: '缺料触发机制：',
           alert: trimmed
         });
         return;
       }
 
       // Timeline / Date Detection
-      if (trimmed.match(/\d{4}-\d{2}-\d{2}/) || trimmed.includes('里程碑') || trimmed.includes('节点')) {
+      if (trimmed.match(/\d{4}-\d{2}-\d{2}/)) {
         let timelineCard = parsedCards.find(x => x.type === 'timeline');
         if (!timelineCard) {
           timelineCard = {
@@ -1176,8 +1168,8 @@ MQTT 属性协议规范：
             span: 'span-075x',
             dark: false,
             kicker: 'TIMELINE',
-            title: '发布里程碑规划',
-            body: '进度与关键节点：',
+            title: '发布里程碑',
+            body: '节点计划：',
             timelineItems: []
           };
           parsedCards.push(timelineCard);
@@ -1185,38 +1177,10 @@ MQTT 属性协议规范：
         timelineCard.timelineItems.push(trimmed);
         return;
       }
-
-      // Default Graphic/Text Card
-      parsedCards.push({
-        id: 'c' + Date.now() + Math.random(),
-        type: 'graphic',
-        span: 'span-1x1',
-        dark: false,
-        kicker: 'FEATURE',
-        title: trimmed.slice(0, 16),
-        body: trimmed,
-        imageUrl: ''
-      });
     });
 
-    // Auto-Grid Balancing Algorithm (Bento.page style - Ensure no trailing row holes)
-    const spanUnits = { 'span-05x': 3, 'span-075x': 4, 'span-1x1': 6, 'span-15x': 9, 'span-2x1': 12, 'span-1x2': 6, 'span-2x2': 12 };
-    const unitSpans = { 3: 'span-05x', 4: 'span-075x', 6: 'span-1x1', 9: 'span-15x', 12: 'span-2x1' };
-
-    let currentRowWidth = 0;
-    parsedCards.forEach((c, i) => {
-      let w = spanUnits[c.span] || 6;
-      if (currentRowWidth + w > 12) {
-        // Balance preceding items in row if needed
-        currentRowWidth = w;
-      } else {
-        currentRowWidth += w;
-      }
-    });
-
-    // Apply parsed values
-    document.getElementById('docTitle').innerText = title;
-    document.getElementById('docSubtitle').innerText = subtitle;
+    if (title) document.getElementById('docTitle').innerText = title;
+    if (subtitle) document.getElementById('docSubtitle').innerText = subtitle;
     if (parsedCards.length > 0) cards = parsedCards;
 
     closeGeneratorModal();
