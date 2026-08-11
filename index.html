@@ -3,519 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Tool Hub · 云端控制台</title>
+<title>Tool Hub</title>
 <style>
-  :root {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
-    color: #1f201d;
-    background: #f5f0e8;
-  }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0;
-    min-width: 920px;
-    height: 100vh;
-    overflow: hidden;
-    -webkit-font-smoothing: antialiased;
-    background: #f5f0e8;
-  }
-  button, input { font: inherit; }
-  button { cursor: pointer; border-radius: 9px; }
-  button:focus-visible, input:focus-visible {
-    outline: 3px solid rgba(223, 106, 75, .28);
-    outline-offset: 2px;
-  }
-  .ui-icon { display: block; flex: none; }
-
-  /* App Shell Grid */
-  .app-shell {
-    display: grid;
-    grid-template-columns: 248px minmax(0, 1fr);
-    height: 100vh;
-    overflow: hidden;
-    background: #f5f0e8;
-  }
-
-  /* Sidebar */
-  .sidebar {
-    display: flex;
-    height: 100vh;
-    flex-direction: column;
-    padding: 32px 16px 18px;
-    overflow: hidden;
-    background: #242421;
-    color: rgba(255, 253, 249, .78);
-  }
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 4px 8px 24px;
-  }
-  .brand > b {
-    display: grid;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 11px;
-    background: #df6a4b;
-    color: #30140d;
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .2);
-  }
-  .brand strong, .brand small { display: block; }
-  .brand strong { color: #fffdf9; font-size: 18px; letter-spacing: -.012em; }
-  .brand small { margin-top: 3px; color: rgba(255, 253, 249, .48); font-size: 10px; letter-spacing: .12em; }
-
-  .command-trigger {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    height: 42px;
-    margin: 0 0 22px;
-    padding: 0 11px;
-    border: 1px solid rgba(255, 255, 255, .12);
-    border-radius: 10px;
-    background: rgba(255, 255, 255, .06);
-    color: rgba(255, 253, 249, .66);
-    font-size: 12px;
-    text-align: left;
-  }
-  .command-trigger > span, nav button > span { display: flex; align-items: center; gap: 8px; }
-  .command-trigger:hover { background: rgba(255, 255, 255, .1); color: #fffdf9; }
-  .command-trigger kbd, .toolbar-search kbd, .palette-search kbd {
-    padding: 3px 5px;
-    border: 1px solid currentColor;
-    border-radius: 5px;
-    font-size: 10px;
-    font-family: inherit;
-    opacity: .72;
-  }
-
-  .nav-label { margin: 0 10px 8px; color: rgba(255, 253, 249, .34); font-size: 10px; font-weight: 720; letter-spacing: .12em; }
-  nav { display: grid; gap: 5px; }
-  nav button {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 44px;
-    padding: 0 12px;
-    border: 0;
-    border-radius: 12px;
-    background: transparent;
-    color: inherit;
-    font-size: 14px;
-    font-weight: 610;
-    text-align: left;
-    transition: .16s;
-  }
-  nav button:hover { background: rgba(255, 255, 255, .055); color: #fffdf9; }
-  nav .nav-active { background: #30302c; color: #fffdf9; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .04); }
-  nav .nav-active:before {
-    position: absolute; left: 5px; width: 5px; height: 5px; border-radius: 50%; background: #df6a4b; content: "";
-  }
-  nav em {
-    min-width: 24px;
-    padding: 3px 7px;
-    border-radius: 999px;
-    background: rgba(255, 255, 255, .08);
-    color: rgba(255, 255, 255, .62);
-    font-size: 11px;
-    font-style: normal;
-    text-align: center;
-  }
-
-  .side-foot {
-    margin-top: auto;
-    padding: 13px 12px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, .035);
-    color: rgba(255, 253, 249, .65);
-    font-size: 12px;
-    line-height: 1.6;
-  }
-  .side-foot > i, .sync-state i {
-    display: inline-block;
-    width: 7px;
-    height: 7px;
-    margin-right: 7px;
-    border-radius: 50%;
-    background: #65c98d;
-    box-shadow: 0 0 0 4px rgba(101, 201, 141, .1);
-  }
-  .side-foot small { color: rgba(255, 253, 249, .42); }
-
-  /* Workspace Header & Main Content */
-  .workspace {
-    min-width: 0;
-    height: 100vh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    background: #f5f0e8;
-  }
-  .app-toolbar {
-    position: sticky;
-    z-index: 10;
-    top: 0;
-    display: flex;
-    align-items: center;
-    height: 68px;
-    padding: 0 30px;
-    border-bottom: 1px solid rgba(117, 102, 85, .12);
-    background: rgba(245, 240, 232, .94);
-    backdrop-filter: blur(16px);
-    color: #4d4d47;
-  }
-  .toolbar-title, .toolbar-actions { display: flex; align-items: center; }
-  .toolbar-title { gap: 10px; min-width: 0; }
-  .toolbar-title strong { color: #1f201d; font-size: 15px; }
-  .toolbar-title > span:last-of-type { color: #67645c; font-size: 12px; }
-  .toolbar-folder { display: grid; place-items: center; width: 26px; height: 26px; color: #9f3f2a; font-size: 20px; }
-  .toolbar-divider { color: #b8aea1; }
-  .toolbar-actions { gap: 8px; margin-left: auto; }
-  .sync-state { display: flex; align-items: center; color: #67645c; font-size: 11px; }
-
-  .toolbar-search, .icon-button {
-    min-height: 34px;
-    border: 1px solid #ded6cb;
-    background: rgba(255, 253, 249, .68);
-    color: #4d4d47;
-    font-size: 11px;
-  }
-  .toolbar-search { display: flex; align-items: center; gap: 9px; padding: 0 9px 0 11px; }
-  .toolbar-search:hover, .icon-button:hover { background: #fffdf9; border-color: #cfc3b4; }
-  .icon-button { display: grid; place-items: center; width: 34px; padding: 0; }
-
-  button {
-    min-height: 34px;
-    padding: 0 12px;
-    border: 1px solid #ded6cb;
-    border-radius: 9px;
-    background: #fffdf9;
-    color: #34342f;
-    font-size: 11px;
-    font-weight: 680;
-    transition: transform .12s, background .16s, border-color .16s, box-shadow .16s;
-  }
-  button:hover { border-color: #c8b9aa; }
-  button:active { transform: scale(.97); }
-  button.accent { border-color: #df6a4b; background: #df6a4b; color: #30140d; }
-  button.accent:hover { background: #e6785b; }
-
-  .content { max-width: 1440px; margin: auto; padding: 31px 30px 60px; }
-
-  /* Bento Overview Dashboard */
-  .overview-bento {
-    display: grid;
-    grid-template-columns: repeat(12, minmax(0, 1fr));
-    gap: 14px;
-  }
-  .overview-card {
-    min-width: 0;
-    overflow: hidden;
-    border: 1px solid rgba(126, 105, 83, .15);
-    border-radius: 18px;
-    background: #fffdf9;
-    box-shadow: 0 1px 2px rgba(48, 38, 27, .07), 0 8px 22px rgba(48, 38, 27, .05);
-  }
-  .overview-card .tile-title { margin: 0; padding: 18px 20px 11px; }
-  .overview-card .tile-title > span { display: flex; align-items: center; gap: 7px; font-size: 15px; font-weight: 720; }
-  .overview-card .tile-title small { color: #67645c; font-size: 10px; }
-  
-  .overview-common { grid-column: span 7; min-height: 250px; }
-  .overview-running { grid-column: span 5; min-height: 250px; background: #242421; color: #fffdf9; }
-  .overview-running .tile-title small { color: rgba(255, 253, 249, .52); }
-  .overview-running .tile-title > span i {
-    width: 7px; height: 7px; border-radius: 50%; background: #65c98d; box-shadow: 0 0 0 4px rgba(101, 201, 141, .12);
-  }
-
-  .overview-workspace { grid-column: span 12; min-height: 140px; padding: 20px 24px; background: #f2d6c9; }
-  .workspace-card-head { display: flex; align-items: center; justify-content: space-between; }
-  .workspace-card-head span { color: #7f4939; font-size: 13px; font-weight: 760; }
-  .workspace-card-head strong { color: #3a241c; font-size: 38px; letter-spacing: -.06em; line-height: 1; }
-
-  .category-stats {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 10px;
-    margin-top: 14px;
-  }
-  .category-stats button {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    min-height: 38px;
-    padding: 0 14px;
-    border-color: rgba(128, 87, 71, .18);
-    border-radius: 9px;
-    background: rgba(255, 253, 249, .55);
-    color: #725348;
-    font-size: 12px;
-  }
-  .category-stats button:hover, .category-stats button.active {
-    background: #fffaf7;
-    border-color: rgba(128, 87, 71, .35);
-  }
-  .category-stats b { color: #9f3f2a; font-size: 13px; }
-
-  /* Tool List Rows & Cards */
-  .collection-head {
-    display: flex;
-    align-items: flex-end;
-    justify-content: space-between;
-    margin: 35px 0 16px;
-  }
-  .collection-head span { color: #1f201d; font-size: 24px; font-weight: 800; letter-spacing: -.025em; }
-  .collection-head small { color: #67645c; font-size: 13px; margin-top: 4px; display: block; }
-
-  .tool-list {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 14px;
-  }
-  .tool-row {
-    position: relative;
-    display: grid;
-    grid-template-columns: 42px 1fr auto;
-    grid-template-rows: auto auto 1fr auto;
-    gap: 0 12px;
-    min-height: 220px;
-    padding: 20px;
-    border: 1px solid rgba(126, 105, 83, .15);
-    border-radius: 18px;
-    background: #fffdf9;
-    box-shadow: 0 1px 2px rgba(48, 38, 27, .07), 0 8px 22px rgba(48, 38, 27, .05);
-    transition: transform .18s, box-shadow .18s;
-  }
-  .tool-row:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 10px rgba(48, 38, 27, .08), 0 16px 34px rgba(48, 38, 27, .08);
-  }
-
-  .item-mark {
-    display: grid;
-    grid-row: span 2;
-    place-items: center;
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    background: #242421;
-    color: #fffdf9;
-    font-size: 11px;
-    font-weight: 780;
-  }
-  .mark-tool { background: #df6a4b; color: #30140d; }
-  .mark-project { background: #e7e7d8; color: #4b5235; }
-  .mark-prototype { background: #dce9e8; color: #396869; }
-  .mark-resource { background: #e7e2ef; color: #635177; }
-
-  .tool-copy { min-width: 0; }
-  .tool-copy strong {
-    display: block;
-    overflow: hidden;
-    color: #1f201d;
-    font-size: 17px;
-    letter-spacing: -.015em;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .tool-copy small {
-    display: block;
-    margin-top: 4px;
-    overflow: hidden;
-    color: #67645c;
-    font-size: 12px;
-    line-height: 1.45;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .row-tags {
-    grid-column: 1 / -1;
-    display: flex;
-    align-self: start;
-    flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 18px;
-  }
-  .row-tags span {
-    padding: 4px 8px;
-    border-radius: 6px;
-    background: #f8f3eb;
-    color: #67645c;
-    font-size: 11px;
-    font-weight: 650;
-  }
-
-  .row-state {
-    grid-column: 1 / 2;
-    align-self: end;
-    width: max-content;
-    padding: 5px 9px;
-    border-radius: 999px;
-    background: rgba(31, 32, 29, .065);
-    color: #6b6962;
-    font-size: 11px;
-    font-weight: 680;
-  }
-  .row-state:before {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    margin-right: 6px;
-    border-radius: 50%;
-    background: currentColor;
-    content: "";
-  }
-  .row-state.is-running { background: #e3f1e8; color: #2f8f5b; }
-
-  .row-open {
-    position: absolute;
-    right: 20px;
-    bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    min-height: 34px;
-    text-decoration: none;
-  }
-
-  /* Compact List inside Bento */
-  .compact-list { display: grid; gap: 6px; padding: 0 14px 14px; }
-  .compact-list .tool-row {
-    display: grid;
-    grid-template-columns: 36px minmax(0, 1fr) auto;
-    grid-template-rows: auto;
-    min-height: 52px;
-    padding: 8px 12px;
-    border: 1px solid transparent;
-    border-radius: 12px;
-    background: rgba(255, 253, 249, .66);
-    box-shadow: none;
-    transform: none;
-  }
-  .compact-list .tool-row:hover {
-    border-color: #ded6cb;
-    background: #fffdf9;
-  }
-  .compact-list .item-mark { grid-row: auto; width: 36px; height: 36px; border-radius: 9px; font-size: 9px; }
-  .compact-list .tool-copy strong { font-size: 13px; }
-  .compact-list .tool-copy small { margin-top: 2px; font-size: 10px; }
-  .compact-list .row-tags, .compact-list .row-state { display: none; }
-  .compact-list .row-open {
-    position: static;
-    min-height: 30px;
-    padding: 0 10px;
-    border: 1px solid #ded6cb;
-    background: #fffdf9;
-    color: #34342f;
-    font-size: 11px;
-  }
-
-  /* Command Palette Modal (⌘ K) */
-  .modal-backdrop {
-    position: fixed;
-    z-index: 50;
-    inset: 0;
-    display: grid;
-    place-items: center;
-    padding: 22px;
-    background: rgba(36, 36, 33, .38);
-  }
-  .palette-backdrop {
-    align-items: start;
-    padding-top: 12vh;
-    backdrop-filter: blur(4px);
-  }
-  .command-palette {
-    width: min(640px, 100%);
-    overflow: hidden;
-    border: 1px solid #ded6cb;
-    border-radius: 18px;
-    background: #fffdf9;
-    box-shadow: 0 22px 70px rgba(32, 29, 25, .28);
-  }
-  .palette-search {
-    display: grid;
-    grid-template-columns: 25px 1fr auto;
-    gap: 8px;
-    align-items: center;
-    padding: 15px 18px;
-    border-bottom: 1px solid #e4ddd3;
-    color: #9f3f2a;
-  }
-  .palette-search input {
-    width: 100%;
-    border: 0;
-    outline: 0;
-    background: transparent;
-    color: #1f201d;
-    font-size: 16px;
-  }
-  .palette-caption {
-    display: flex;
-    justify-content: space-between;
-    padding: 11px 18px 7px;
-    color: #82786c;
-    font-size: 11px;
-  }
-  .palette-results {
-    display: grid;
-    max-height: 380px;
-    overflow-y: auto;
-    padding: 0 11px 11px;
-  }
-  .palette-results > a {
-    display: grid;
-    grid-template-columns: 32px 1fr 22px;
-    gap: 10px;
-    align-items: center;
-    min-height: 52px;
-    padding: 8px 10px;
-    border: 0;
-    border-radius: 10px;
-    background: transparent;
-    text-align: left;
-    text-decoration: none;
-    color: inherit;
-  }
-  .palette-results > a:hover, .palette-results > a.palette-active {
-    background: #f8f3eb;
-  }
-  .palette-results .item-mark { width: 30px; height: 30px; border-radius: 9px; font-size: 8px; }
-  .palette-results strong { display: block; font-size: 13px; color: #1f201d; }
-  .palette-results small { display: block; margin-top: 2px; color: #67645c; font-size: 10px; }
-
-  /* Responsive Rules matching desktop app */
-  @media(max-width:1120px) {
-    .tool-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .overview-common { grid-column: span 6; }
-    .overview-running { grid-column: span 6; }
-    .category-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  }
-  @media(max-width:900px) {
-    body { min-width: 0; }
-    .app-shell { grid-template-columns: 74px 1fr; }
-    .sidebar { padding: 32px 8px 18px; }
-    .brand { justify-content: center; }
-    .brand span, .command-trigger span, .command-trigger kbd, .nav-label, nav button span, .side-foot { display: none; }
-    .command-trigger { justify-content: center; }
-    nav button { justify-content: center; }
-    .content { padding: 20px 16px 40px; }
-    .tool-list { grid-template-columns: 1fr; }
-    .overview-common, .overview-running { grid-column: span 12; }
-  }
+:root{font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","PingFang SC",sans-serif;color:#1f201d;background:#f5f0e8}*{box-sizing:border-box}body{margin:0;min-width:920px;height:100vh;overflow:hidden;-webkit-font-smoothing:antialiased}button,input{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible{outline:3px solid rgba(223,106,75,.28);outline-offset:2px}.ui-icon{display:block;flex:none}
+.app-shell{display:grid;grid-template-columns:248px minmax(0,1fr);height:100vh;overflow:hidden;background:#f5f0e8}.sidebar{display:flex;height:100vh;flex-direction:column;padding:57px 16px 18px;overflow:hidden;background:#242421;color:rgba(255,253,249,.78)}.brand{display:flex;align-items:center;gap:12px;padding:4px 8px 24px}.brand>b{display:grid;place-items:center;width:40px;height:40px;border-radius:11px;background:#df6a4b;color:#30140d;box-shadow:inset 0 0 0 1px rgba(255,255,255,.2)}.brand strong,.brand small{display:block}.brand strong{color:#fffdf9;font-size:18px;letter-spacing:-.012em}.brand small{margin-top:3px;color:rgba(255,253,249,.48);font-size:10px;letter-spacing:.12em}.command-trigger{display:flex;align-items:center;justify-content:space-between;width:100%;height:42px;margin:0 0 22px;padding:0 11px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.06);color:rgba(255,253,249,.66);font-size:12px;text-align:left}.command-trigger>span,.side-shortcuts button,nav button>span{display:flex;align-items:center;gap:8px}.command-trigger:hover{background:rgba(255,255,255,.1);color:#fffdf9}.command-trigger kbd,.toolbar-search kbd,.launch-search kbd,.palette-search kbd{padding:3px 5px;border:1px solid currentColor;border-radius:5px;font-size:10px;font-family:inherit;opacity:.72}.nav-label{margin:0 10px 8px;color:rgba(255,253,249,.34);font-size:10px;font-weight:720;letter-spacing:.12em}nav{display:grid;gap:5px}nav button{position:relative;display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:0 12px;border:0;border-radius:12px;background:transparent;color:inherit;font-size:14px;font-weight:610;text-align:left;transition:.16s}nav button:hover{background:rgba(255,255,255,.055);color:#fffdf9}nav .nav-active{background:#30302c;color:#fffdf9;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}nav .nav-active:before{position:absolute;left:5px;width:5px;height:5px;border-radius:50%;background:#df6a4b;content:""}nav em{min-width:24px;padding:3px 7px;border-radius:999px;background:rgba(255,255,255,.08);color:rgba(255,255,255,.62);font-size:11px;font-style:normal;text-align:center}.side-shortcuts{display:grid;gap:3px;margin-top:15px}.side-shortcuts button{padding:8px 10px;border:0;border-radius:8px;background:transparent;color:rgba(255,253,249,.58);font-size:12px;text-align:left}.side-shortcuts button:hover{background:rgba(255,255,255,.055);color:#fffdf9}.side-foot{margin-top:auto;padding:13px 12px;border-radius:12px;background:rgba(255,255,255,.035);color:rgba(255,253,249,.65);font-size:12px;line-height:1.6}.side-foot>i,.sync-state i{display:inline-block;width:7px;height:7px;margin-right:7px;border-radius:50%;background:#65c98d;box-shadow:0 0 0 4px rgba(101,201,141,.1)}.side-foot small{color:rgba(255,253,249,.42)}
+.workspace{min-width:0;height:100vh;overflow-y:auto;overscroll-behavior:contain;background:#f5f0e8}.app-toolbar{position:sticky;z-index:10;top:0;display:flex;align-items:center;height:68px;padding:0 30px;border-bottom:1px solid rgba(117,102,85,.12);background:rgba(245,240,232,.94);backdrop-filter:blur(16px);color:#4d4d47}.toolbar-title,.toolbar-actions{display:flex;align-items:center}.toolbar-title{gap:10px;min-width:0}.toolbar-title strong{color:#1f201d;font-size:15px}.toolbar-title>span:last-of-type{color:#67645c;font-size:12px}.toolbar-folder{display:grid;place-items:center;width:26px;height:26px;color:#9f3f2a;font-size:20px}.toolbar-divider{color:#b8aea1}.toolbar-more{min-height:28px;padding:0 5px;border:0;background:transparent;color:#8b8175;letter-spacing:1px}.toolbar-actions{gap:8px;margin-left:auto}.sync-state{display:flex;align-items:center;color:#67645c;font-size:11px}.sync-state i{width:6px;height:6px;margin-right:6px;box-shadow:none}.toolbar-search,.update-button,.icon-button{min-height:34px;border:1px solid #ded6cb;background:rgba(255,253,249,.68);color:#4d4d47;font-size:11px}.toolbar-search{display:flex;align-items:center;gap:9px;padding:0 9px 0 11px}.toolbar-search:hover,.update-button:hover,.icon-button:hover{background:#fffdf9;border-color:#cfc3b4}.icon-button{display:grid;place-items:center;width:34px;padding:0;font-size:16px}.toolbar-new{min-height:34px}button{min-height:34px;padding:0 12px;border:1px solid #ded6cb;border-radius:9px;background:#fffdf9;color:#34342f;font-size:11px;font-weight:680;transition:transform .12s,background .16s,border-color .16s,box-shadow .16s}button:hover{border-color:#c8b9aa}button:active{transform:scale(.97)}button.accent{border-color:#df6a4b;background:#df6a4b;color:#30140d}button.accent:hover{background:#e6785b}button.quiet{border-color:transparent;background:transparent;color:#67645c}button:disabled{opacity:.55;cursor:wait}.content{max-width:1440px;margin:auto;padding:31px 30px 60px}
+.launch-bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.launch-bento>article{min-width:0;overflow:hidden;border:1px solid rgba(126,105,83,.15);border-radius:18px;background:#fffdf9;box-shadow:0 1px 2px rgba(48,38,27,.07),0 8px 22px rgba(48,38,27,.05);transition:transform .18s,box-shadow .18s}.launch-bento>article:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(48,38,27,.08),0 16px 34px rgba(48,38,27,.08)}.bento-launch{grid-column:span 6;min-height:180px;padding:26px 28px;background:#fffdf9!important}.bento-kicker{color:#9f3f2a;font-size:12px;font-weight:730}.bento-launch h1{margin:9px 0 21px;color:#1f201d;font-size:32px;letter-spacing:-.03em}.launch-search{display:flex;align-items:center;justify-content:space-between;max-width:590px;min-height:42px;border-color:#ded6cb;background:#f8f3eb;color:#4d4d47;font-size:12px;text-align:left}.bento-launch p{margin:10px 0 0;color:#67645c;font-size:12px}.bento-stat{grid-column:span 3;display:flex;min-height:180px;flex-direction:column;justify-content:space-between;padding:22px}.bento-stat small{color:#67645c;font-size:12px;font-weight:650}.bento-stat strong{font-size:46px;letter-spacing:-.05em;line-height:1}.bento-stat span{color:#67645c;font-size:11px}.bento-dark{background:#242421!important;color:#fffdf9}.bento-dark small,.bento-dark span{color:rgba(255,253,249,.52)}.bento-recent{grid-column:span 8;min-height:240px;padding:20px}.bento-favorites{grid-column:span 4;min-height:240px;padding:20px;background:#f8f3eb!important}.bento-create{grid-column:span 4;min-height:180px;padding:21px;background:#f2d6c9!important}.bento-create>span{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:#df6a4b;color:#30140d;font-size:21px}.bento-create strong{margin-top:auto;font-size:16px}.bento-create small{margin:5px 0 14px;color:#6b4b41;font-size:12px}.bento-create>div{display:flex;gap:8px}.bento-create .link-button{border:0;background:transparent;color:#9f3f2a}.tile-title{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}.tile-title>span{font-size:16px;font-weight:720}.tile-title small{color:#67645c;font-size:11px}.tile-title button{min-height:28px;padding:0;border:0;background:transparent;color:#9f3f2a}.empty-mini{padding:30px 3px;color:#81776a;font-size:12px}.collection-head,.list-heading{display:flex;align-items:end;justify-content:space-between;margin:35px 0 14px}.collection-head div,.list-heading div{display:grid;gap:5px}.collection-head span,.list-heading h1{margin:0;color:#1f201d;font-size:26px;letter-spacing:-.025em}.collection-head small{color:#67645c;font-size:13px}.list-heading span{color:#9f3f2a;font-size:11px;font-weight:720;letter-spacing:.1em}.filter-count{background:rgba(255,253,249,.68);color:#4d4d47}
+.tool-list{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;border:0;background:transparent}.tool-row{position:relative;display:grid;grid-template-columns:42px 1fr auto;grid-template-rows:auto auto 1fr auto;gap:0 12px;min-height:225px;padding:20px;border:1px solid rgba(126,105,83,.15);border-radius:18px;background:#fffdf9;box-shadow:0 1px 2px rgba(48,38,27,.07),0 8px 22px rgba(48,38,27,.05);transition:transform .18s,box-shadow .18s}.tool-row:hover{transform:translateY(-2px);box-shadow:0 4px 10px rgba(48,38,27,.08),0 16px 34px rgba(48,38,27,.08)}.item-mark{display:grid;grid-row:span 2;place-items:center;width:42px;height:42px;border-radius:12px;background:#242421;color:#fffdf9;font-size:11px;font-weight:780}.mark-tool{background:#df6a4b;color:#30140d}.mark-project{background:#e7e7d8;color:#4b5235}.mark-prototype{background:#dce9e8;color:#396869}.mark-resource{background:#e7e2ef;color:#635177}.tool-copy{min-width:0}.tool-copy strong{display:block;overflow:hidden;color:#1f201d;font-size:17px;letter-spacing:-.015em;text-overflow:ellipsis;white-space:nowrap}.tool-copy small{display:block;margin-top:4px;overflow:hidden;color:#67645c;font-size:12px;line-height:1.45;text-overflow:ellipsis;white-space:nowrap}.row-tags{grid-column:1/-1;display:flex;align-self:start;flex-wrap:wrap;gap:5px;margin-top:18px}.row-tags span{padding:4px 7px;border-radius:6px;background:#f8f3eb;color:#67645c;font-size:10px;font-weight:650}.row-state{grid-column:1/2;align-self:end;width:max-content;padding:5px 9px;border-radius:999px;background:rgba(31,32,29,.065);color:#6b6962;font-size:11px;font-weight:680}.row-state:before{display:inline-block;width:6px;height:6px;margin-right:6px;border-radius:50%;background:currentColor;content:""}.row-state.is-running{background:#e3f1e8;color:#2f8f5b}.star{grid-column:3;grid-row:1;min-height:30px;padding:0;border:0;background:transparent;color:#a59b8e;font-size:19px}.row-actions{position:absolute;right:57px;bottom:20px}.more-actions{min-height:31px;padding:0 4px;border:0;background:transparent;color:#91877b;letter-spacing:1px}.action-menu{position:absolute;z-index:12;right:0;bottom:35px;display:grid;min-width:150px;padding:5px;border:1px solid #ded6cb;border-radius:9px;background:#fffdf9;box-shadow:0 10px 26px rgba(36,33,28,.16)}.action-menu button{min-height:29px;padding:0 8px;border:0;background:transparent;text-align:left}.action-menu button:hover{background:#f8f3eb}.row-open{position:absolute;right:20px;bottom:20px;display:flex;align-items:center;gap:8px;min-height:32px;text-decoration:none}.row-open kbd{color:#9a9085;font-size:11px}.compact-list{display:grid}.compact-list .tool-row{display:grid;grid-template-columns:36px minmax(0,1fr) 25px;grid-template-rows:auto;min-height:58px;padding:8px 10px;border:1px solid transparent;border-radius:12px;background:rgba(255,253,249,.66);box-shadow:none;transform:none}.compact-list .tool-row:hover{border-color:#ded6cb;background:#fffdf9;box-shadow:none}.compact-list .item-mark{grid-row:auto;width:36px;height:36px;border-radius:99px;font-size:9px}.compact-list .tool-copy strong{font-size:12px}.compact-list .tool-copy small{margin-top:3px;font-size:10px}.compact-list .row-state,.compact-list .star,.compact-list .row-actions{display:none}.compact-list .row-open{position:static;grid-column:3;min-height:30px;padding:0;border:0;background:transparent;color:#9f3f2a;font-size:0}.compact-list .row-open kbd{font-size:16px}
+.modal-backdrop{position:fixed;z-index:20;inset:0;display:grid;place-items:center;padding:22px;background:rgba(36,36,33,.38)}.palette-backdrop{align-items:start;padding-top:12vh;backdrop-filter:blur(4px)}.command-palette{width:min(680px,100%);overflow:hidden;border:1px solid #ded6cb;border-radius:18px;background:#fffdf9;box-shadow:0 22px 70px rgba(32,29,25,.28)}.palette-search{display:grid;grid-template-columns:25px 1fr auto;gap:4px;align-items:center;padding:15px 18px;border-bottom:1px solid #e4ddd3;color:#9f3f2a}.palette-search input{width:100%;border:0;outline:0;background:transparent;color:#1f201d;font-size:16px}.palette-caption{display:flex;justify-content:space-between;padding:11px 18px 7px;color:#82786c;font-size:11px}.palette-results{display:grid;max-height:420px;overflow:auto;padding:0 11px 11px}.palette-results>a{display:grid;grid-template-columns:32px 1fr 22px;gap:10px;align-items:center;min-height:52px;padding:8px;border:0;background:transparent;text-align:left;text-decoration:none;color:inherit}.palette-results>a:hover,.palette-results>a.palette-active{border-radius:10px;background:#f8f3eb}.palette-results .item-mark{width:30px;height:30px;border-radius:9px;font-size:8px}.palette-results strong,.palette-results small{display:block}.palette-results strong{font-size:12px;color:#1f201d}.palette-results small{margin-top:3px;color:#67645c;font-size:10px}.palette-results kbd{color:#9a9085;font-size:12px}
+.overview-bento{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:14px}.overview-card{min-width:0;overflow:hidden;border:1px solid rgba(126,105,83,.15);border-radius:18px;background:#fffdf9;box-shadow:0 1px 2px rgba(48,38,27,.07),0 8px 22px rgba(48,38,27,.05)}.overview-card .tile-title{margin:0;padding:18px 20px 11px}.overview-card .tile-title>span{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:720}.overview-card .tile-title small{color:#67645c;font-size:11px}.overview-common{grid-column:span 7;min-height:284px}.overview-running{grid-column:span 5;min-height:284px;background:#242421;color:#fffdf9}.overview-running .tile-title small{color:rgba(255,253,249,.52)}.overview-running .tile-title>span i{width:7px;height:7px;border-radius:50%;background:#65c98d;box-shadow:0 0 0 4px rgba(101,201,141,.12)}.overview-running .compact-list .tool-row{background:rgba(255,255,255,.05);color:#fffdf9}.overview-running .compact-list .tool-row:hover{border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.08)}.overview-running .compact-list .tool-copy strong{color:#fffdf9}.overview-running .compact-list .tool-copy small{color:rgba(255,253,249,.48)}.overview-running .compact-list .row-open{color:#e89a82}.overview-attention{grid-column:span 7;min-height:222px;background:#f8f3eb}.overview-workspace{grid-column:span 5;min-height:222px;padding:20px;background:#f2d6c9}.overview-card .compact-list{padding:0 10px 12px}.overview-card .compact-list .tool-row{min-height:48px}.overview-card .empty-mini{display:flex;align-items:center;gap:9px;padding:26px 20px;color:#81776a}.overview-running .empty-mini{color:rgba(255,253,249,.55)}.workspace-card-head{display:grid;grid-template-columns:auto 1fr;align-items:baseline;gap:0 10px}.workspace-card-head span{color:#7f4939;font-size:12px;font-weight:760}.workspace-card-head strong{grid-row:span 2;justify-self:end;color:#3a241c;font-size:44px;letter-spacing:-.06em;line-height:.9}.workspace-card-head small{color:#896154;font-size:11px}.category-stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;margin-top:17px}.category-stats button{display:flex;align-items:center;justify-content:space-between;min-height:33px;padding:0 9px;border-color:rgba(128,87,71,.18);border-radius:8px;background:rgba(255,253,249,.42);color:#725348;font-size:11px}.category-stats button:hover,.category-stats button.active{background:#fffaf7;border-color:rgba(128,87,71,.32)}.category-stats b{color:#9f3f2a;font-size:12px}
+@media(max-width:1120px){.overview-bento{grid-template-columns:repeat(8,minmax(0,1fr))}.overview-common{grid-column:span 5}.overview-running{grid-column:span 3}.overview-attention{grid-column:span 5}.overview-workspace{grid-column:span 3}.tool-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){body{min-width:0}.app-shell{grid-template-columns:78px 1fr}.sidebar{padding:57px 10px 18px}.brand{justify-content:center}.brand span,.command-trigger span,.command-trigger kbd,.nav-label,nav button span,.side-shortcuts,.side-foot{display:none}.command-trigger{justify-content:center}.command-trigger:before{content:"⌕"}nav button{justify-content:center}.toolbar-search{font-size:0}.toolbar-search kbd{font-size:9px}.content{padding:24px}.tool-list{grid-template-columns:1fr}.overview-bento{grid-template-columns:1fr}.overview-common,.overview-running,.overview-attention,.overview-workspace{grid-column:span 1;min-height:0}}
 </style>
 </head>
 <body>
 
-<div class="app-shell">
-  <!-- Sidebar -->
+<main class="app-shell">
   <aside class="sidebar">
     <div class="brand">
       <b>
-        <svg className="ui-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <svg class="ui-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
           <rect x="4" y="4" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/>
           <rect x="14" y="4" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/>
           <rect x="4" y="14" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/>
@@ -524,139 +31,198 @@
       </b>
       <span>
         <strong>Tool Hub</strong>
-        <small>CLOUD LAUNCHER</small>
+        <small>LOCAL LAUNCHER</small>
       </span>
     </div>
 
-    <button class="command-trigger" id="sidebarSearchBtn">
+    <button class="command-trigger" id="commandTrigger">
       <span>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="5.5"/><path d="m15.1 15.1 4.1 4.1"/></svg>
+        <svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="5.5"/><path d="m15.1 15.1 4.1 4.1"/></svg>
         搜索或输入命令
       </span>
       <kbd>⌘ K</kbd>
     </button>
 
     <p class="nav-label">工作区</p>
-    <nav id="navGroup">
-      <button class="nav-active" data-section="home">
+    <nav id="sidebarNav">
+      <button class="nav-active" data-sec="home">
         <span>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.8" y="4" width="16.4" height="16" rx="2"/><path d="M3.8 10h16.4M10 10v10"/></svg>
+          <svg class="ui-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.8" y="4" width="16.4" height="16" rx="2"/><path d="M3.8 10h16.4M10 10v10"/></svg>
           概览
         </span>
+        <em></em>
       </button>
-      <button data-section="tool">
+      <button data-sec="tool">
         <span>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 5.1a4.4 4.4 0 0 0-5.5 5.5L4.4 15.4a2.1 2.1 0 1 0 3 3l4.8-4.8a4.4 4.4 0 0 0 5.5-5.5l-3.1 3.1-2.5-2.5Z"/></svg>
+          <svg class="ui-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 5.1a4.4 4.4 0 0 0-5.5 5.5L4.4 15.4a2.1 2.1 0 1 0 3 3l4.8-4.8a4.4 4.4 0 0 0 5.5-5.5l-3.1 3.1-2.5-2.5Z"/></svg>
           工具
         </span>
         <em>2</em>
       </button>
-      <button data-section="prototype">
+      <button data-sec="project">
         <span>
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.7" y="4.4" width="16.6" height="15.2" rx="2"/><path d="M9.1 4.7v14.6M9.1 10.1h10.7"/></svg>
+          <svg class="ui-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.8 7.8c0-1.1.9-2 2-2h4l1.7 2H18c1.2 0 2 .8 2 2v7.4c0 1.1-.8 2-2 2H5.8c-1.1 0-2-.9-2-2Z"/></svg>
+          项目
+        </span>
+        <em>0</em>
+      </button>
+      <button data-sec="prototype">
+        <span>
+          <svg class="ui-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3.7" y="4.4" width="16.6" height="15.2" rx="2"/><path d="M9.1 4.7v14.6M9.1 10.1h10.7"/></svg>
           原型
         </span>
         <em>5</em>
       </button>
+      <button data-sec="resource">
+        <span>
+          <svg class="ui-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 5.6A2.6 2.6 0 0 1 7.1 3H19.5v16H7.1a2.6 2.6 0 0 0-2.6 2.6Z"/><path d="M4.5 5.6v16"/></svg>
+          资料
+        </span>
+        <em>0</em>
+      </button>
     </nav>
 
+    <p class="nav-label">快捷入口</p>
+    <div class="side-shortcuts">
+      <button onclick="openPalette()"><svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>新建可扫描项目</button>
+      <button onclick="openPalette()"><svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15V4"/><path d="m8 8 4-4 4 4"/><path d="M5 14v4.4c0 .9.7 1.6 1.6 1.6h10.8c.9 0 1.6-.7 1.6-1.6V14"/></svg>收录已有项目</button>
+      <button onclick="openPalette()"><svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9.3 8.1V6.5a2.7 2.7 0 1 0-2.7 2.7h10.8a2.7 2.7 0 1 1-2.7 2.7v-1.6"/><path d="M14.7 15.9v1.6a2.7 2.7 0 1 0 2.7-2.7H6.6a2.7 2.7 0 1 1 2.7-2.7v1.6"/></svg>打开命令面板</button>
+    </div>
+
     <div class="side-foot">
-      <i></i>云端就绪<br/>
-      <small>7 个入口 · GitHub Pages 托管</small>
+      <i></i> 云端就绪<br/>
+      <small>7 个入口 · 7 个运行中</small>
     </div>
   </aside>
 
-  <!-- Workspace Area -->
-  <main class="workspace">
+  <section class="workspace">
     <header class="app-toolbar">
       <div class="toolbar-title">
         <span class="toolbar-folder">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3.8 7.8c0-1.1.9-2 2-2h4l1.7 2H18c1.2 0 2 .8 2 2v7.4c0 1.1-.8 2-2 2H5.8c-1.1 0-2-.9-2-2Z"/></svg>
+          <svg class="ui-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.8 7.8c0-1.1.9-2 2-2h4l1.7 2H18c1.2 0 2 .8 2 2v7.4c0 1.1-.8 2-2 2H5.8c-1.1 0-2-.9-2-2Z"/></svg>
         </span>
         <strong>工作台</strong>
         <span class="toolbar-divider">/</span>
-        <span id="currentSectionTitle">今日概览</span>
+        <span id="subTitleText">今日概览</span>
+        <button class="toolbar-more" aria-label="更多工作区操作">
+          <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/></svg>
+        </button>
       </div>
 
       <div class="toolbar-actions">
         <span class="sync-state"><i></i> 云端已同步</span>
-        <button class="toolbar-search" id="topSearchBtn">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="5.5"/><path d="m15.1 15.1 4.1 4.1"/></svg>
+        <button class="update-button" onclick="openPalette()">
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 15V4"/><path d="m8 8 4-4 4 4"/><path d="M5 14v4.4c0 .9.7 1.6 1.6 1.6h10.8c.9 0 1.6-.7 1.6-1.6V14"/></svg>
+          检查更新
+        </button>
+        <button class="toolbar-search" id="toolbarSearch">
+          <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="5.5"/><path d="m15.1 15.1 4.1 4.1"/></svg>
           搜索 <kbd>⌘ K</kbd>
         </button>
         <button class="icon-button" aria-label="刷新入口状态" onclick="window.location.reload()">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0 2.1 5.4"/><path d="M20 4v7h-7"/></svg>
+          <svg class="ui-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20 11a8 8 0 1 0 2.1 5.4"/><path d="M20 4v7h-7"/></svg>
+        </button>
+        <button class="accent toolbar-new" onclick="openPalette()">
+          <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+          新建
         </button>
       </div>
     </header>
 
     <div class="content">
-      <!-- Bento Dashboard Overview -->
-      <section class="overview-bento" id="overviewBento">
-        <article class="overview-card overview-common">
-          <div class="tile-title">
-            <span>常用入口</span>
-            <small>常用工具 · 快捷跳转</small>
-          </div>
-          <div class="compact-list" id="compactFavorites">
-            <!-- Rendered by JS -->
-          </div>
-        </article>
+      <!-- Overview Bento View -->
+      <div id="homeView">
+        <section class="overview-bento">
+          <article class="overview-card overview-common">
+            <div class="tile-title">
+              <span>常用入口</span>
+              <small>固定优先 · 最近补位</small>
+            </div>
+            <div class="compact-list" id="commonList"></div>
+          </article>
 
-        <article class="overview-card overview-running">
-          <div class="tile-title">
-            <span><i></i> 状态概览</span>
-            <small>GitHub Pages 托管中</small>
-          </div>
-          <div class="compact-list" id="compactRunning">
-            <!-- Rendered by JS -->
-          </div>
-        </article>
+          <article class="overview-card overview-running">
+            <div class="tile-title">
+              <span><i></i>正在运行</span>
+              <small>7 个云端静态服务</small>
+            </div>
+            <div class="compact-list" id="runningList"></div>
+          </article>
 
-        <article class="overview-card overview-workspace">
-          <div class="workspace-card-head">
-            <span>已收录云端入口</span>
-            <strong>7</strong>
-          </div>
-          <div class="category-stats" id="categoryStats">
-            <button class="active" data-cat="all"><span>全部入口</span><b>7</b></button>
-            <button data-cat="tool"><span>单页工具</span><b>2</b></button>
-            <button data-cat="prototype"><span>交互原型</span><b>5</b></button>
-            <button data-cat="iot"><span>IoT 模块</span><b>3</b></button>
-          </div>
-        </article>
-      </section>
+          <article class="overview-card overview-attention">
+            <div class="tile-title">
+              <span>待处理</span>
+              <small>一切就绪</small>
+            </div>
+            <div class="empty-mini">
+              <svg class="ui-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/><rect x="14" y="4" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/><rect x="4" y="14" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/><rect x="14" y="14" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/></svg>
+              没有路径失效或待确认的入口。
+            </div>
+          </article>
 
-      <!-- Main Collection List -->
-      <section class="collection-head">
-        <div>
-          <span id="collectionTitle">所有入口</span>
-          <small>单页工具与交互原型，点击即可在任意设备上直接运行</small>
-        </div>
-      </section>
+          <article class="overview-card overview-workspace">
+            <div class="workspace-card-head">
+              <span>工作区</span>
+              <strong>7</strong>
+              <small>已收录入口</small>
+            </div>
+            <div class="category-stats" id="catStats">
+              <button data-cat="tool"><span>工具</span><b>2</b></button>
+              <button data-cat="project"><span>项目</span><b>0</b></button>
+              <button data-cat="prototype"><span>原型</span><b>5</b></button>
+              <button data-cat="resource"><span>资料</span><b>0</b></button>
+            </div>
+          </article>
+        </section>
 
-      <div class="tool-list" id="toolGrid">
-        <!-- Rendered by JS -->
+        <section class="collection-head">
+          <div>
+            <span>所有入口</span>
+            <small>工具、项目和原型都能从这里直接打开</small>
+          </div>
+          <button class="filter-count" onclick="openPalette()">
+            <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="5.5"/><path d="m15.1 15.1 4.1 4.1"/></svg>
+            搜索全部
+          </button>
+        </section>
+
+        <div class="tool-list" id="homeToolList"></div>
       </div>
-    </div>
-  </main>
-</div>
 
-<!-- Command Palette Modal (⌘ K) -->
-<div class="modal-backdrop palette-backdrop" id="paletteModal" style="display: none;">
+      <!-- Specific Section View -->
+      <div id="sectionView" style="display: none;">
+        <section class="list-heading">
+          <div>
+            <span id="secKicker">工具库</span>
+            <h1 id="secHeading">2 个可用入口</h1>
+          </div>
+          <button class="filter-count" onclick="openPalette()">
+            <svg class="ui-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="5.5"/><path d="m15.1 15.1 4.1 4.1"/></svg>
+            搜索
+          </button>
+        </section>
+        <div class="tool-list" id="sectionToolList"></div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<!-- Command Palette Modal -->
+<div class="modal-backdrop palette-backdrop" id="paletteModal" style="display: none;" onclick="closePalette()">
   <section class="command-palette" onclick="event.stopPropagation()">
     <div class="palette-search">
-      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.8" cy="10.8" r="5.5"/><path d="m15.1 15.1 4.1 4.1"/></svg>
-      <input type="text" id="paletteInput" placeholder="搜索工具、原型、标签…" />
+      <span>
+        <svg class="ui-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="5.5"/><path d="m15.1 15.1 4.1 4.1"/></svg>
+      </span>
+      <input type="text" id="paletteInput" placeholder="搜索工具、项目、标签…" />
       <kbd>ESC</kbd>
     </div>
     <div class="palette-caption">
-      <span>检索结果与可用入口</span>
-      <small>↵ 打开</small>
+      <span id="paletteCaption">最近使用与全部入口</span>
+      <small>↑↓ 选择　↵ 打开</small>
     </div>
-    <div class="palette-results" id="paletteResults">
-      <!-- Rendered by JS -->
-    </div>
+    <div class="palette-results" id="paletteResults"></div>
   </section>
 </div>
 
@@ -665,7 +231,7 @@
     {
       id: 'json-check',
       name: 'JSON Check',
-      desc: 'JSON 格式化、校验与自动修复调试工具',
+      description: 'JSON 格式化、校验与修复',
       category: 'tool',
       mode: 'static',
       markClass: 'mark-tool',
@@ -676,7 +242,7 @@
     {
       id: 'skills-manager',
       name: 'Skills Manager',
-      desc: 'Agent Skills 本地与云端资源管理控制台单页',
+      description: '管理本地 Agent Skills',
       category: 'tool',
       mode: 'static',
       markClass: 'mark-tool',
@@ -686,8 +252,8 @@
     },
     {
       id: 'iot-attribute-frontend',
-      name: 'IoT 设备属性前端',
-      desc: '茶饮机设备属性轻量前端交互原型',
+      name: 'IoT Attribute Frontend',
+      description: '茶饮机设备属性轻量前端',
       category: 'prototype',
       mode: 'static',
       markClass: 'mark-prototype',
@@ -698,7 +264,7 @@
     {
       id: 'kira-omega',
       name: 'KIRA OMEGA IoT',
-      desc: 'IoT 专业透视控制中心监控原型',
+      description: 'IoT 专业透视控制中心',
       category: 'prototype',
       mode: 'static',
       markClass: 'mark-prototype',
@@ -709,7 +275,7 @@
     {
       id: 'calibration-training',
       name: '自动校准功能培训',
-      desc: '自动校准培训与演示 Bento 结构页面',
+      description: '自动校准培训与演示材料',
       category: 'prototype',
       mode: 'static',
       markClass: 'mark-prototype',
@@ -719,8 +285,8 @@
     },
     {
       id: 'data-refresh',
-      name: '数据刷新原型',
-      desc: '设备数据刷新页面复刻与重载原型',
+      name: '数据刷新',
+      description: '设备数据刷新页面复刻',
       category: 'prototype',
       mode: 'static',
       markClass: 'mark-prototype',
@@ -731,7 +297,7 @@
     {
       id: 'iot-3d-demo',
       name: 'IoT 3D 热区测试',
-      desc: '设备 3D 模块与热区交互测试原型',
+      description: '设备 3D 模块与热区交互',
       category: 'prototype',
       mode: 'static',
       markClass: 'mark-prototype',
@@ -741,94 +307,118 @@
     }
   ];
 
-  let currentCategory = 'all';
-  let searchQuery = '';
+  let activeSection = 'home';
+  let favorites = ['json-check', 'skills-manager'];
 
-  function renderGrid() {
-    const toolGrid = document.getElementById('toolGrid');
-    const filtered = items.filter(item => {
-      const matchCat = currentCategory === 'all' || 
-                       (currentCategory === 'tool' && item.category === 'tool') ||
-                       (currentCategory === 'prototype' && item.category === 'prototype') ||
-                       (currentCategory === 'iot' && item.tags.includes('IoT'));
-      const haystack = (item.name + ' ' + item.desc + ' ' + item.tags.join(' ')).toLowerCase();
-      const matchSearch = !searchQuery || haystack.includes(searchQuery.toLowerCase());
-      return matchCat && matchSearch;
-    });
-
-    if (filtered.length === 0) {
-      toolGrid.innerHTML = `<div style="grid-column: 1/-1; padding: 40px; text-align: center; color: #67645c;">暂无符合条件的云端入口</div>`;
-      return;
+  function renderToolRowHtml(item, compact = false) {
+    if (compact) {
+      return `
+        <div class="tool-row">
+          <span class="item-mark ${item.markClass}">${item.markText}</span>
+          <div class="tool-copy">
+            <strong>${item.name}</strong>
+            <small>${item.category}</small>
+          </div>
+          <a href="${item.url}" class="row-open">
+            <svg class="ui-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
+          </a>
+        </div>
+      `;
     }
 
-    toolGrid.innerHTML = filtered.map(item => `
+    return `
       <div class="tool-row">
         <span class="item-mark ${item.markClass}">${item.markText}</span>
         <div class="tool-copy">
           <strong>${item.name}</strong>
-          <small>${item.desc}</small>
+          <small>${item.description}</small>
         </div>
         <div class="row-tags">
-          ${item.tags.map(tag => `<span>${tag}</span>`).join('')}
+          ${item.tags.slice(0, 2).map(tag => `<span>${tag}</span>`).join('')}
         </div>
-        <span class="row-state">已就绪</span>
+        <span class="row-state is-running">已就绪</span>
+        <button class="star ${favorites.includes(item.id) ? 'is-favorite' : ''}" onclick="toggleFav('${item.id}')">
+          <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="${favorites.includes(item.id) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.8"><path d="m12 3.7 2.6 5.3 5.8.8-4.2 4.1 1 5.8-5.2-2.8-5.2 2.8 1-5.8-4.2-4.1 5.8-.8Z"/></svg>
+        </button>
+        <div class="row-actions">
+          <button class="more-actions">
+            <svg class="ui-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h.01M12 12h.01M19 12h.01" stroke-width="3"/></svg>
+          </button>
+        </div>
         <a href="${item.url}" class="row-open accent" target="_self">
           打开
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
+          <svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
         </a>
       </div>
-    `).join('');
+    `;
   }
 
-  function renderCompactLists() {
-    const favoritesList = document.getElementById('compactFavorites');
-    const runningList = document.getElementById('compactRunning');
-
-    favoritesList.innerHTML = items.slice(0, 3).map(item => `
-      <div class="tool-row">
-        <span class="item-mark ${item.markClass}">${item.markText}</span>
-        <div class="tool-copy">
-          <strong>${item.name}</strong>
-          <small>${item.desc}</small>
-        </div>
-        <a href="${item.url}" class="row-open">打开</a>
-      </div>
-    `).join('');
-
-    runningList.innerHTML = items.slice(2, 5).map(item => `
-      <div class="tool-row">
-        <span class="item-mark ${item.markClass}">${item.markText}</span>
-        <div class="tool-copy">
-          <strong>${item.name}</strong>
-          <small>${item.desc}</small>
-        </div>
-        <a href="${item.url}" class="row-open">浏览</a>
-      </div>
-    `).join('');
+  function toggleFav(id) {
+    if (favorites.includes(id)) {
+      favorites = favorites.filter(f => f !== id);
+    } else {
+      favorites.push(id);
+    }
+    renderViews();
   }
 
-  // Category Filtering
-  document.getElementById('categoryStats').addEventListener('click', e => {
-    const btn = e.target.closest('button');
-    if (!btn) return;
-    document.querySelectorAll('#categoryStats button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentCategory = btn.dataset.cat;
-    renderGrid();
-  });
+  function renderViews() {
+    const homeView = document.getElementById('homeView');
+    const sectionView = document.getElementById('sectionView');
+    const subTitleText = document.getElementById('subTitleText');
 
-  document.getElementById('navGroup').addEventListener('click', e => {
+    if (activeSection === 'home') {
+      homeView.style.display = 'block';
+      sectionView.style.display = 'none';
+      subTitleText.innerText = '今日概览';
+
+      document.getElementById('commonList').innerHTML = items.slice(0, 3).map(item => renderToolRowHtml(item, true)).join('');
+      document.getElementById('runningList').innerHTML = items.slice(0, 3).map(item => renderToolRowHtml(item, true)).join('');
+      document.getElementById('homeToolList').innerHTML = items.map(item => renderToolRowHtml(item)).join('');
+    } else {
+      homeView.style.display = 'none';
+      sectionView.style.display = 'block';
+
+      const secNames = { tool: '工具', project: '项目', prototype: '原型', resource: '资料' };
+      const secName = secNames[activeSection] || '库';
+      subTitleText.innerText = secName + '库';
+      document.getElementById('secKicker').innerText = secName + '库';
+
+      const filtered = items.filter(item => item.category === activeSection);
+      document.getElementById('secHeading').innerText = `${filtered.length} 个可用入口`;
+
+      if (filtered.length === 0) {
+        document.getElementById('sectionToolList').innerHTML = `<div class="empty-mini" style="grid-column: 1/-1; padding: 40px 0;"><svg class="ui-icon" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/><rect x="14" y="4" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/><rect x="4" y="14" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/><rect x="14" y="14" width="6" height="6" rx="1.4" fill="currentColor" stroke="none"/></svg>该分类下暂无已收录的入口</div>`;
+      } else {
+        document.getElementById('sectionToolList').innerHTML = filtered.map(item => renderToolRowHtml(item)).join('');
+      }
+    }
+  }
+
+  // Sidebar navigation listener
+  document.getElementById('sidebarNav').addEventListener('click', e => {
     const btn = e.target.closest('button');
     if (!btn) return;
-    document.querySelectorAll('#navGroup button').forEach(b => b.classList.remove('nav-active'));
+    document.querySelectorAll('#sidebarNav button').forEach(b => b.classList.remove('nav-active'));
     btn.classList.add('nav-active');
-    const section = btn.dataset.section;
-    currentCategory = section === 'home' ? 'all' : section;
-    document.getElementById('currentSectionTitle').innerText = btn.innerText.trim();
-    renderGrid();
+    activeSection = btn.dataset.sec;
+    renderViews();
   });
 
-  // Command Palette Handlers
+  // Category stats click handler inside Bento
+  document.getElementById('catStats').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if (!btn) return;
+    const cat = btn.dataset.cat;
+    activeSection = cat;
+    document.querySelectorAll('#sidebarNav button').forEach(b => {
+      if (b.dataset.sec === cat) b.classList.add('nav-active');
+      else b.classList.remove('nav-active');
+    });
+    renderViews();
+  });
+
+  // Palette modal listeners
   const paletteModal = document.getElementById('paletteModal');
   const paletteInput = document.getElementById('paletteInput');
   const paletteResults = document.getElementById('paletteResults');
@@ -846,25 +436,29 @@
 
   function renderPaletteResults(query) {
     const filtered = items.filter(item => {
-      const haystack = (item.name + ' ' + item.desc + ' ' + item.tags.join(' ')).toLowerCase();
+      const haystack = (item.name + ' ' + item.description + ' ' + item.tags.join(' ')).toLowerCase();
       return !query || haystack.includes(query.toLowerCase());
     });
+
+    if (filtered.length === 0) {
+      paletteResults.innerHTML = `<div style="padding: 16px; color: #82786c; font-size: 12px; text-align: center;">没有找到匹配的入口</div>`;
+      return;
+    }
 
     paletteResults.innerHTML = filtered.map(item => `
       <a href="${item.url}">
         <span class="item-mark ${item.markClass}">${item.markText}</span>
         <span>
           <strong>${item.name}</strong>
-          <small>${item.desc}</small>
+          <small>${item.description}</small>
         </span>
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
+        <svg class="ui-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13"/><path d="m13 6 6 6-6 6"/></svg>
       </a>
     `).join('');
   }
 
-  document.getElementById('sidebarSearchBtn').addEventListener('click', openPalette);
-  document.getElementById('topSearchBtn').addEventListener('click', openPalette);
-  paletteModal.addEventListener('click', closePalette);
+  document.getElementById('commandTrigger').addEventListener('click', openPalette);
+  document.getElementById('toolbarSearch').addEventListener('click', openPalette);
 
   paletteInput.addEventListener('input', e => {
     renderPaletteResults(e.target.value);
@@ -880,8 +474,7 @@
     }
   });
 
-  renderGrid();
-  renderCompactLists();
+  renderViews();
 </script>
 
 </body>
