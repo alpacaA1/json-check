@@ -17,6 +17,17 @@
       ]
     },
     {
+      "id": "bento-doc-builder",
+      "name": "Bento Doc Builder",
+      "description": "视觉 PRD & 培训文档便当盒页面生成器",
+      "category": "tool",
+      "mode": "static",
+      "root": "{hubRoot}/managed",
+      "entry": "bento-doc-builder.html",
+      "tags": ["Bento", "PRD", "生成器"],
+      "featured": true
+    },
+    {
       "id": "skills-manager",
       "name": "Skills Manager",
       "description": "管理本地 Agent Skills",

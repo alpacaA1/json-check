@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bento Doc Builder · 视觉 PRD & 培训文档生成器</title>
+<style>
+  :root {
+    --bg: #f5f0e8;
+    --panel: #ffffff;
+    --panel-hover: #fffdf9;
+    --border: rgba(126, 105, 83, 0.18);
+    --border-hover: rgba(223, 106, 75, 0.4);
+    --text-main: #1f201d;
+    --text-muted: #67645c;
+    --accent: #df6a4b;
+    --accent-dark: #9f3f2a;
+    --accent-bg: #f2d6c9;
+    --dark-panel: #242421;
+    --dark-text: #fffdf9;
+    --card-shadow: 0 1px 3px rgba(48,38,27,.06), 0 8px 24px rgba(48,38,27,.05);
+  }
+
+  body.dark-theme {
+    --bg: #0f1115;
+    --panel: #171b22;
+    --panel-hover: #1e232d;
+    --border: rgba(255, 255, 255, 0.1);
+    --border-hover: rgba(99, 102, 241, 0.5);
+    --text-main: #f1f5f9;
+    --text-muted: #94a3b8;
+    --accent: #6366f1;
+    --accent-dark: #818cf8;
+    --accent-bg: rgba(99, 102, 241, 0.15);
+    --dark-panel: #0b0d11;
+    --dark-text: #f1f5f9;
+    --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingFang SC", sans-serif;
+    background: var(--bg);
+    color: var(--text-main);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    -webkit-font-smoothing: antialiased;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  button, input, textarea { font: inherit; }
+
+  /* Header Controls Toolbar */
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 40;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 24px;
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .header-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .header-brand b {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+    background: var(--accent);
+    color: #fff;
+  }
+
+  .header-brand h1 {
+    font-size: 16px;
+    font-weight: 750;
+    color: var(--text-main);
+  }
+
+  .header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  btn, button {
+    min-height: 34px;
+    padding: 0 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--panel);
+    color: var(--text-main);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.15s ease;
+  }
+
+  button:hover {
+    border-color: var(--border-hover);
+    transform: translateY(-1px);
+  }
+
+  button.accent {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  button.accent:hover { opacity: 0.9; }
+
+  /* Main Document Container */
+  .doc-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 32px 24px 80px;
+    flex: 1;
+  }
+
+  /* Document Meta Header */
+  .doc-header-block {
+    margin-bottom: 32px;
+    padding: 28px 32px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    box-shadow: var(--card-shadow);
+  }
+
+  .doc-meta-tags {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .tag-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    background: var(--accent-bg);
+    color: var(--accent-dark);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .doc-title {
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    outline: none;
+    padding: 4px 0;
+    border-bottom: 1px dashed transparent;
+  }
+
+  .doc-title:focus, .doc-subtitle:focus {
+    border-bottom-color: var(--accent);
+  }
+
+  .doc-subtitle {
+    font-size: 15px;
+    color: var(--text-muted);
+    margin-top: 8px;
+    outline: none;
+    padding: 2px 0;
+    line-height: 1.5;
+  }
+
+  /* Bento Grid Layout */
+  .bento-grid {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  /* Bento Card Items */
+  .bento-card {
+    position: relative;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--panel);
+    padding: 24px;
+    box-shadow: var(--card-shadow);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.18s, box-shadow 0.18s, border-color 0.18s;
+  }
+
+  .bento-card:hover {
+    border-color: var(--border-hover);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+  }
+
+  /* Spans */
+  .span-1x1 { grid-column: span 6; min-height: 200px; }
+  .span-2x1 { grid-column: span 12; min-height: 200px; }
+  .span-1x2 { grid-column: span 6; min-height: 400px; }
+  .span-2x2 { grid-column: span 12; min-height: 400px; }
+
+  @media (max-width: 900px) {
+    .span-1x1, .span-1x2, .span-2x1, .span-2x2 { grid-column: span 12; }
+  }
+
+  /* Hover Toolbar for Editing */
+  .card-toolbar {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: var(--panel);
+    padding: 4px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    z-index: 10;
+  }
+
+  .bento-card:hover .card-toolbar { opacity: 1; }
+
+  .tool-btn {
+    min-height: 26px;
+    padding: 0 7px;
+    font-size: 11px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+  }
+  .tool-btn:hover { color: var(--text-main); background: rgba(0,0,0,0.05); }
+
+  /* Card Inner Contents */
+  .card-kicker {
+    font-size: 11px;
+    font-weight: 750;
+    color: var(--accent-dark);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 8px;
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 750;
+    color: var(--text-main);
+    outline: none;
+    margin-bottom: 8px;
+  }
+
+  .card-body {
+    font-size: 13px;
+    color: var(--text-muted);
+    line-height: 1.55;
+    outline: none;
+    flex: 1;
+  }
+
+  /* Metric Card Style */
+  .metric-number {
+    font-size: 44px;
+    font-weight: 850;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    margin: 12px 0 6px;
+    color: var(--accent);
+  }
+
+  /* Dark Variant Card */
+  .bento-card.dark-card {
+    background: var(--dark-panel);
+    color: var(--dark-text);
+    border-color: rgba(255,255,255,0.08);
+  }
+  .bento-card.dark-card .card-title { color: #fff; }
+  .bento-card.dark-card .card-body { color: rgba(255,255,255,0.65); }
+
+  /* Code Block Spec */
+  .code-block {
+    background: #11141a;
+    color: #84d8ff;
+    padding: 14px;
+    border-radius: 10px;
+    font-family: "SF Mono", Menlo, monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-x: auto;
+    margin-top: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    outline: none;
+    white-space: pre-wrap;
+  }
+
+  /* Diff Block */
+  .diff-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .diff-box {
+    padding: 12px;
+    border-radius: 10px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .diff-old { background: rgba(255, 117, 117, 0.1); border: 1px solid rgba(255, 117, 117, 0.2); color: #ff7575; }
+  .diff-new { background: rgba(123, 216, 143, 0.1); border: 1px solid rgba(123, 216, 143, 0.2); color: #2f8f5b; }
+
+  /* Notice / Alert Block */
+  .alert-box {
+    padding: 12px 14px;
+    border-radius: 10px;
+    background: rgba(246, 199, 110, 0.12);
+    border: 1px solid rgba(246, 199, 110, 0.3);
+    color: #d97706;
+    font-size: 12px;
+    margin-top: 10px;
+  }
+
+  /* Checklist Block */
+  .checklist {
+    display: grid;
+    gap: 8px;
+    margin-top: 10px;
+  }
+  .check-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-main);
+  }
+  .check-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); }
+
+  /* Output Raw Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-box {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    max-width: 600px;
+    width: 90%;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-brand">
+    <b>🍱</b>
+    <h1>Bento Doc Builder</h1>
+  </div>
+  <div class="header-actions">
+    <button onclick="toggleTheme()">🌓 切换主题</button>
+    <button onclick="addCard('metric')">➕ 指标卡</button>
+    <button onclick="addCard('graphic')">➕ 图文卡</button>
+    <button onclick="addCard('code')">➕ 代码卡</button>
+    <button onclick="addCard('diff')">➕ 对比卡</button>
+    <button onclick="addCard('notice')">➕ 警示卡</button>
+    <button onclick="exportJson()">💾 保存草稿 JSON</button>
+    <button onclick="importJsonPrompt()">📂 载入草稿</button>
+    <button class="accent" onclick="exportStandaloneHtml()">🚀 导出独立 HTML 网页</button>
+  </div>
+</header>
+
+<main class="doc-container">
+  <!-- Document Metadata -->
+  <section class="doc-header-block">
+    <div class="doc-meta-tags">
+      <span class="tag-badge" contenteditable="true">P0 核心需求</span>
+      <span class="tag-badge" contenteditable="true">IoT 平台 v2.4</span>
+      <span class="tag-badge" contenteditable="true">茶饮机/咖啡机专有</span>
+    </div>
+    <div class="doc-title" contenteditable="true" id="docTitle">茶饮机全自动校准 PRD (上线说明文档)</div>
+    <div class="doc-subtitle" contenteditable="true" id="docSubtitle">实现多料仓脉冲精确扣减、出料误差动态补偿算法与闭环 CIP 清洗提醒功能。</div>
+  </section>
+
+  <!-- Bento Grid Cards Container -->
+  <div class="bento-grid" id="bentoGrid">
+    <!-- Rendered by JS -->
+  </div>
+</main>
+
+<script>
+  let cards = [
+    {
+      id: 'c1',
+      type: 'metric',
+      span: 'span-1x1',
+      dark: false,
+      kicker: 'CORE METRIC',
+      title: '出料精确度升至 99.8%',
+      number: '99.8%',
+      body: '通过引入下料脉冲闭环与算法补偿，平均出料误差由上一代的 1.2g 降低至 0.02g。'
+    },
+    {
+      id: 'c2',
+      type: 'code',
+      span: 'span-1x1',
+      dark: true,
+      kicker: 'THING MODEL SPEC',
+      title: 'MQTT 属性与下发协议',
+      body: '平台与上位机通信的 MQTT 上报 JSON 格式规范：',
+      code: '{\n  "device_id": "TEA-MAKER-09",\n  "silo_id": 3,\n  "pulse_count": 450,\n  "calibration_status": 1,\n  "error_rate": 0.002\n}'
+    },
+    {
+      id: 'c3',
+      type: 'diff',
+      span: 'span-2x1',
+      dark: false,
+      kicker: 'ALGORITHM COMPARISON',
+      title: '出料扣减算法新旧对比',
+      body: '展示新版脉冲反馈补偿与旧版固定时间扣减的核心差异：',
+      oldText: '❌ 旧逻辑：按定时器固定毫秒扣减，原料密度变化时产生高达 8% 的累计出料偏差。',
+      newText: '✅ 新逻辑：按传感器脉冲实时闭环，支持按气温与损耗系数动态做算法衰减补偿。'
+    },
+    {
+      id: 'c4',
+      type: 'notice',
+      span: 'span-1x1',
+      dark: false,
+      kicker: 'BOUNDARY & WARNING',
+      title: '缺料预警与边界条件限制',
+      body: '当任一料仓余量低于 15% 阈值时触发：',
+      alert: '⚠️ 注意：缺料告警触发后，系统将自动向 POS 侧广播“低余量”提示，但不会中断当前正在进行的出杯。'
+    },
+    {
+      id: 'c5',
+      type: 'checklist',
+      span: 'span-1x1',
+      dark: false,
+      kicker: 'SOP CHECKLIST',
+      title: '上线与联调确认清单',
+      body: '部署前请依次确认以下步骤：',
+      items: ['物模型属性 Topic 验证通过', '灰度 5 台连锁门店设备观察', '确认失败自动回滚逻辑执行成功']
+    }
+  ];
+
+  function toggleTheme() {
+    document.body.classList.toggle('dark-theme');
+  }
+
+  function renderGrid() {
+    const grid = document.getElementById('bentoGrid');
+    grid.innerHTML = cards.map((card, idx) => {
+      let contentHtml = '';
+
+      if (card.type === 'metric') {
+        contentHtml = `
+          <div class="metric-number">${card.number}</div>
+          <div class="card-body" contenteditable="true" onblur="updateCard('${card.id}', 'body', this.innerText)">${card.body}</div>
+        `;
+      } else if (card.type === 'code') {
+        contentHtml = `
+          <div class="card-body" contenteditable="true" onblur="updateCard('${card.id}', 'body', this.innerText)">${card.body}</div>
+          <div class="code-block" contenteditable="true" onblur="updateCard('${card.id}', 'code', this.innerText)">${card.code || ''}</div>
+        `;
+      } else if (card.type === 'diff') {
+        contentHtml = `
+          <div class="card-body" contenteditable="true" onblur="updateCard('${card.id}', 'body', this.innerText)">${card.body}</div>
+          <div class="diff-container">
+            <div class="diff-box diff-old" contenteditable="true" onblur="updateCard('${card.id}', 'oldText', this.innerText)">${card.oldText}</div>
+            <div class="diff-box diff-new" contenteditable="true" onblur="updateCard('${card.id}', 'newText', this.innerText)">${card.newText}</div>
+          </div>
+        `;
+      } else if (card.type === 'notice') {
+        contentHtml = `
+          <div class="card-body" contenteditable="true" onblur="updateCard('${card.id}', 'body', this.innerText)">${card.body}</div>
+          <div class="alert-box" contenteditable="true" onblur="updateCard('${card.id}', 'alert', this.innerText)">${card.alert}</div>
+        `;
+      } else if (card.type === 'checklist') {
+        contentHtml = `
+          <div class="card-body" contenteditable="true" onblur="updateCard('${card.id}', 'body', this.innerText)">${card.body}</div>
+          <div class="checklist">
+            ${(card.items || []).map(item => `
+              <label class="check-item"><input type="checkbox" checked /> <span>${item}</span></label>
+            `).join('')}
+          </div>
+        `;
+      } else {
+        contentHtml = `
+          <div class="card-body" contenteditable="true" onblur="updateCard('${card.id}', 'body', this.innerText)">${card.body}</div>
+        `;
+      }
+
+      return `
+        <div class="bento-card ${card.span} ${card.dark ? 'dark-card' : ''}" id="${card.id}">
+          <div class="card-toolbar">
+            <button class="tool-btn" onclick="cycleSpan('${card.id}')">📐 尺寸</button>
+            <button class="tool-btn" onclick="toggleDark('${card.id}')">🎨 暗黑</button>
+            <button class="tool-btn" onclick="moveCard(${idx}, -1)">⬆️</button>
+            <button class="tool-btn" onclick="moveCard(${idx}, 1)">⬇️</button>
+            <button class="tool-btn" onclick="removeCard('${card.id}')">❌ 删除</button>
+          </div>
+          <div>
+            <div class="card-kicker" contenteditable="true" onblur="updateCard('${card.id}', 'kicker', this.innerText)">${card.kicker}</div>
+            <div class="card-title" contenteditable="true" onblur="updateCard('${card.id}', 'title', this.innerText)">${card.title}</div>
+            ${contentHtml}
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function updateCard(id, key, val) {
+    const c = cards.find(x => x.id === id);
+    if (c) c[key] = val;
+  }
+
+  function cycleSpan(id) {
+    const spans = ['span-1x1', 'span-2x1', 'span-1x2', 'span-2x2'];
+    const c = cards.find(x => x.id === id);
+    if (c) {
+      const currIdx = spans.indexOf(c.span);
+      c.span = spans[(currIdx + 1) % spans.length];
+      renderGrid();
+    }
+  }
+
+  function toggleDark(id) {
+    const c = cards.find(x => x.id === id);
+    if (c) {
+      c.dark = !c.dark;
+      renderGrid();
+    }
+  }
+
+  function moveCard(idx, dir) {
+    const target = idx + dir;
+    if (target >= 0 && target < cards.length) {
+      const temp = cards[idx];
+      cards[idx] = cards[target];
+      cards[target] = temp;
+      renderGrid();
+    }
+  }
+
+  function removeCard(id) {
+    cards = cards.filter(x => x.id !== id);
+    renderGrid();
+  }
+
+  function addCard(type) {
+    const id = 'c' + Date.now();
+    if (type === 'metric') {
+      cards.push({ id, type, span: 'span-1x1', kicker: 'METRIC', title: '新增数据指标', number: '100%', body: '描述文字说明。' });
+    } else if (type === 'code') {
+      cards.push({ id, type, span: 'span-1x1', dark: true, kicker: 'CODE SPEC', title: '协议格式规范', body: '数据描述：', code: '{\n  "status": "ok"\n}' });
+    } else if (type === 'diff') {
+      cards.push({ id, type, span: 'span-2x1', kicker: 'COMPARISON', title: '逻辑对比规则', body: '说明文字：', oldText: '❌ 旧逻辑：说明', newText: '✅ 新逻辑：说明' });
+    } else if (type === 'notice') {
+      cards.push({ id, type, span: 'span-1x1', kicker: 'ALERT', title: '注意事项与限制', body: '说明：', alert: '⚠️ 注意提示内容' });
+    } else {
+      cards.push({ id, type: 'graphic', span: 'span-1x1', kicker: 'FEATURE', title: '新特性说明', body: '详细图文内容与描述。' });
+    }
+    renderGrid();
+  }
+
+  function exportJson() {
+    const data = {
+      title: document.getElementById('docTitle').innerText,
+      subtitle: document.getElementById('docSubtitle').innerText,
+      cards
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'bento-doc-draft.json';
+    a.click();
+  }
+
+  function importJsonPrompt() {
+    const jsonStr = prompt('请粘贴你的草稿 JSON 内容：');
+    if (!jsonStr) return;
+    try {
+      const data = JSON.parse(jsonStr);
+      if (data.title) document.getElementById('docTitle').innerText = data.title;
+      if (data.subtitle) document.getElementById('docSubtitle').innerText = data.subtitle;
+      if (Array.isArray(data.cards)) cards = data.cards;
+      renderGrid();
+    } catch {
+      alert('无效的 JSON 内容');
+    }
+  }
+
+  function exportStandaloneHtml() {
+    const title = document.getElementById('docTitle').innerText;
+    const htmlContent = document.documentElement.outerHTML
+      .replace(/<header>[\s\S]*?<\/header>/, '<header style="padding: 16px 32px; background: var(--panel); border-bottom: 1px solid var(--border);"><h2 style="font-size:16px;">🍱 ' + title + '</h2></header>')
+      .replace(/card-toolbar/g, 'card-toolbar-hidden')
+      .replace(/contenteditable="true"/g, '');
+
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `${title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5_-]/g, '_')}.html`;
+    a.click();
+  }
+
+  renderGrid();
+</script>
+
+</body>
+</html>
