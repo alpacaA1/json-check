@@ -49,7 +49,7 @@
     transition: background 0.2s, color 0.2s;
   }
 
-  button, input, textarea { font: inherit; }
+  button, input, textarea, select { font: inherit; }
 
   /* Header Controls Toolbar */
   header {
@@ -244,20 +244,23 @@
     border: 2px dashed var(--accent);
   }
 
-  /* Grid Spans */
-  .span-1x1 { grid-column: span 6; min-height: 220px; }
-  .span-2x1 { grid-column: span 12; min-height: 220px; }
-  .span-1x2 { grid-column: span 6; min-height: 420px; }
-  .span-2x2 { grid-column: span 12; min-height: 420px; }
+  /* Grid Fractional Spans */
+  .span-05x { grid-column: span 3; min-height: 180px; padding: 18px; } /* 0.5x 迷你卡 (1/4宽) */
+  .span-075x { grid-column: span 4; min-height: 190px; padding: 20px; } /* 0.75x 紧凑卡 (1/3宽) */
+  .span-1x1 { grid-column: span 6; min-height: 220px; }                /* 1.0x 标准卡 (1/2宽) */
+  .span-15x { grid-column: span 9; min-height: 220px; }                /* 1.5x 宽屏卡 (3/4宽) */
+  .span-2x1 { grid-column: span 12; min-height: 220px; }               /* 2.0x 整行卡 (全宽) */
+  .span-1x2 { grid-column: span 6; min-height: 420px; }                /* 1x2 纵向加高卡 */
+  .span-2x2 { grid-column: span 12; min-height: 420px; }               /* 2x2 超大方卡 */
 
   @media (max-width: 900px) {
-    .span-1x1, .span-1x2, .span-2x1, .span-2x2 { grid-column: span 12; }
+    .span-05x, .span-075x, .span-1x1, .span-15x, .span-1x2, .span-2x1, .span-2x2 { grid-column: span 12; }
   }
 
   /* Bottom Floating Card Toolbar */
   .card-toolbar {
     position: absolute;
-    bottom: 14px;
+    bottom: 12px;
     left: 50%;
     transform: translateX(-50%) translateY(10px);
     display: flex;
@@ -346,12 +349,24 @@
     flex: 1;
   }
 
+  /* Metric Card Style */
+  .metric-number {
+    font-size: 44px;
+    font-weight: 850;
+    letter-spacing: -0.05em;
+    line-height: 1;
+    margin: 10px 0 6px;
+    color: var(--accent);
+    outline: none;
+  }
+  .span-05x .metric-number { font-size: 32px; }
+
   /* Image Upload Zone inside Graphic Card */
   .image-dropzone {
-    margin-top: 12px;
+    margin-top: 10px;
     border: 2px dashed var(--border);
     border-radius: 12px;
-    padding: 16px;
+    padding: 14px;
     text-align: center;
     cursor: pointer;
     background: rgba(0,0,0,0.02);
@@ -362,63 +377,63 @@
     background: rgba(223, 106, 75, 0.05);
   }
   .image-dropzone p {
-    font-size: 12px;
+    font-size: 11px;
     color: var(--text-muted);
-    margin-top: 6px;
+    margin-top: 4px;
   }
   .card-img-preview {
     width: 100%;
-    max-height: 240px;
+    max-height: 220px;
     object-fit: cover;
     border-radius: 12px;
-    margin-top: 12px;
+    margin-top: 10px;
     display: block;
   }
   .img-actions {
     display: flex;
     gap: 8px;
-    margin-top: 8px;
+    margin-top: 6px;
   }
 
   /* Link Card Spec */
   .link-card-box {
-    margin-top: 12px;
+    margin-top: 10px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 12px 16px;
-    border-radius: 12px;
+    padding: 10px 14px;
+    border-radius: 10px;
     background: var(--accent-bg);
     color: var(--accent-dark);
     text-decoration: none;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 12px;
   }
 
   /* Member Avatar Card Spec */
   .member-box {
     display: flex;
     align-items: center;
-    gap: 12px;
-    margin-top: 12px;
+    gap: 10px;
+    margin-top: 10px;
   }
   .member-avatar {
-    width: 44px;
-    height: 44px;
+    width: 38px;
+    height: 38px;
     border-radius: 50%;
     background: var(--accent);
     color: #fff;
     display: grid;
     place-items: center;
     font-weight: 800;
-    font-size: 16px;
+    font-size: 14px;
   }
 
   /* Timeline Card Spec */
   .timeline-list {
     display: grid;
-    gap: 10px;
-    margin-top: 12px;
+    gap: 8px;
+    margin-top: 10px;
     position: relative;
     padding-left: 14px;
     border-left: 2px solid var(--border);
@@ -438,17 +453,6 @@
     background: var(--accent);
   }
 
-  /* Metric Card Style */
-  .metric-number {
-    font-size: 46px;
-    font-weight: 850;
-    letter-spacing: -0.05em;
-    line-height: 1;
-    margin: 12px 0 6px;
-    color: var(--accent);
-    outline: none;
-  }
-
   /* Dark Variant Card */
   .bento-card.dark-card {
     background: var(--dark-panel);
@@ -462,13 +466,13 @@
   .code-block {
     background: #11141a;
     color: #84d8ff;
-    padding: 14px;
-    border-radius: 12px;
+    padding: 12px;
+    border-radius: 10px;
     font-family: "SF Mono", Menlo, monospace;
-    font-size: 12px;
+    font-size: 11px;
     line-height: 1.5;
     overflow-x: auto;
-    margin-top: 10px;
+    margin-top: 8px;
     border: 1px solid rgba(255,255,255,0.08);
     outline: none;
     white-space: pre-wrap;
@@ -478,13 +482,13 @@
   .diff-container {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-top: 12px;
+    gap: 8px;
+    margin-top: 10px;
   }
   .diff-box {
-    padding: 12px;
-    border-radius: 10px;
-    font-size: 12px;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 11px;
     line-height: 1.5;
     outline: none;
   }
@@ -493,30 +497,30 @@
 
   /* Notice / Alert Block */
   .alert-box {
-    padding: 12px 14px;
-    border-radius: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
     background: rgba(246, 199, 110, 0.12);
     border: 1px solid rgba(246, 199, 110, 0.3);
     color: #d97706;
-    font-size: 12px;
-    margin-top: 10px;
+    font-size: 11px;
+    margin-top: 8px;
     outline: none;
   }
 
   /* Checklist Block */
   .checklist {
     display: grid;
-    gap: 8px;
-    margin-top: 10px;
+    gap: 6px;
+    margin-top: 8px;
   }
   .check-item {
     display: flex;
     align-items: center;
-    gap: 8px;
-    font-size: 13px;
+    gap: 6px;
+    font-size: 12px;
     color: var(--text-main);
   }
-  .check-item input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--accent); cursor: pointer; }
+  .check-item input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--accent); cursor: pointer; }
   .check-item-text { flex: 1; outline: none; }
   .check-item-del {
     border: none;
@@ -524,13 +528,13 @@
     color: #a59b8e;
     padding: 0 4px;
     min-height: auto;
-    font-size: 14px;
+    font-size: 13px;
   }
   .check-item-del:hover { color: #e5484d; }
 
   .add-check-btn {
-    margin-top: 8px;
-    min-height: 28px;
+    margin-top: 6px;
+    min-height: 26px;
     padding: 0 8px;
     font-size: 11px;
     border: 1.5px dashed var(--border);
@@ -564,16 +568,16 @@
     <h1>Bento Doc Builder</h1>
   </div>
   <div class="header-actions">
-    <button onclick="toggleTheme()">🌓 切换主题</button>
-    <button onclick="addCard('metric')">➕ 指标卡</button>
-    <button onclick="addCard('graphic')">➕ 图文卡</button>
-    <button onclick="addCard('code')">➕ 代码卡</button>
-    <button onclick="addCard('diff')">➕ 对比卡</button>
-    <button onclick="addCard('notice')">➕ 警示卡</button>
-    <button onclick="addCard('checklist')">➕ 清单卡</button>
-    <button onclick="addCard('link')">➕ 外链卡</button>
-    <button onclick="addCard('member')">➕ 负责人卡</button>
-    <button onclick="addCard('timeline')">➕ 里程碑卡</button>
+    <button onclick="toggleTheme()">🌓 主题</button>
+    <button onclick="addCard('metric', 'span-05x')">➕ 0.5x 指标</button>
+    <button onclick="addCard('graphic', 'span-1x1')">➕ 图文卡</button>
+    <button onclick="addCard('code', 'span-075x')">➕ 代码卡</button>
+    <button onclick="addCard('diff', 'span-2x1')">➕ 对比卡</button>
+    <button onclick="addCard('notice', 'span-075x')">➕ 警示卡</button>
+    <button onclick="addCard('checklist', 'span-1x1')">➕ 清单卡</button>
+    <button onclick="addCard('link', 'span-05x')">➕ 外链卡</button>
+    <button onclick="addCard('member', 'span-05x')">➕ 负责人</button>
+    <button onclick="addCard('timeline', 'span-075x')">➕ 时间线</button>
     <button onclick="exportJson()">💾 保存草稿</button>
     <button onclick="document.getElementById('jsonFileInput').click()">📂 载入草稿</button>
     <button class="accent" onclick="exportStandaloneHtml()">🚀 导出 HTML</button>
@@ -584,7 +588,7 @@
 
 <!-- Onboarding Hint Banner -->
 <div class="onboarding-banner" id="hintBanner">
-  <span>💡 提示：按住卡片底部的 <b>⠿ 把手</b> 即可自由拖拽排序；文字直接点击修改，图文卡支持拖拽或粘贴图片。</span>
+  <span>💡 支持 <b>0.5x 迷你卡 (1/4宽)</b> 与 <b>0.75x 紧凑卡 (1/3宽)</b> 等非对称尺寸；按住 <b>⠿ 把手</b> 拖拽排序。</span>
   <button onclick="document.getElementById('hintBanner').style.display='none'">✕</button>
 </div>
 
@@ -613,36 +617,46 @@
     {
       id: 'c1',
       type: 'metric',
-      span: 'span-1x1',
+      span: 'span-05x',
       dark: false,
-      kicker: 'CORE METRIC',
-      title: '出料精确度升至 99.8%',
+      kicker: 'PRECISION',
+      title: '出料精度',
       number: '99.8%',
-      body: '通过引入下料脉冲闭环与算法补偿，平均出料误差由上一代的 1.2g 降低至 0.02g。'
+      body: '误差降低至 0.02g。'
     },
     {
       id: 'c2',
-      type: 'code',
-      span: 'span-1x1',
-      dark: true,
-      kicker: 'THING MODEL SPEC',
-      title: 'MQTT 属性与下发协议',
-      body: '平台与上位机通信的 MQTT 上报 JSON 格式规范：',
-      code: '{\n  "device_id": "TEA-MAKER-09",\n  "silo_id": 3,\n  "pulse_count": 450,\n  "calibration_status": 1,\n  "error_rate": 0.002\n}'
+      type: 'metric',
+      span: 'span-05x',
+      dark: false,
+      kicker: 'SPEED',
+      title: '校准耗时',
+      number: '12s',
+      body: '支持一键自动基线下发。'
     },
     {
       id: 'c3',
+      type: 'code',
+      span: 'span-075x',
+      dark: true,
+      kicker: 'SPEC PROTOCOL',
+      title: 'MQTT 属性协议',
+      body: '平台与上位机通信 JSON：',
+      code: '{\n  "device_id": "TEA-09",\n  "pulse": 450,\n  "status": 1\n}'
+    },
+    {
+      id: 'c4',
       type: 'diff',
       span: 'span-2x1',
       dark: false,
       kicker: 'ALGORITHM COMPARISON',
       title: '出料扣减算法新旧对比',
       body: '展示新版脉冲反馈补偿与旧版固定时间扣减的核心差异：',
-      oldText: '❌ 旧逻辑：按定时器固定毫秒扣减，原料密度变化时产生高达 8% 的累计出料偏差。',
-      newText: '✅ 新逻辑：按传感器脉冲实时闭环，支持按气温与损耗系数动态做算法衰减补偿。'
+      oldText: '❌ 旧逻辑：按定时器固定毫秒扣减，产生高达 8% 的偏差。',
+      newText: '✅ 新逻辑：按传感器脉冲实时闭环，支持动态衰减补偿。'
     },
     {
-      id: 'c4',
+      id: 'c5',
       type: 'graphic',
       span: 'span-1x2',
       dark: false,
@@ -652,25 +666,25 @@
       imageUrl: ''
     },
     {
-      id: 'c5',
+      id: 'c6',
       type: 'notice',
-      span: 'span-1x1',
+      span: 'span-075x',
       dark: false,
-      kicker: 'BOUNDARY & WARNING',
-      title: '缺料预警与边界条件限制',
-      body: '当任一料仓余量低于 15% 阈值时触发：',
-      alert: '⚠️ 注意：缺料告警触发后，系统将自动向 POS 侧广播“低余量”提示，但不会中断当前正在进行的出杯。'
+      kicker: 'BOUNDARY',
+      title: '缺料预警限制',
+      body: '余量低于 15% 时触发：',
+      alert: '⚠️ 自动向 POS 侧广播“低余量”提示，不中断出杯。'
     },
     {
-      id: 'c6',
+      id: 'c7',
       type: 'member',
-      span: 'span-1x1',
+      span: 'span-05x',
       dark: false,
-      kicker: 'STAKEHOLDERS',
-      title: '项目负责人与技术对接',
-      body: '如有需求变动或接口疑问，请联系相关负责人：',
-      memberName: '张三 (IoT 产品线)',
-      memberRole: 'P0 需求 Owner / 架构支持'
+      kicker: 'OWNER',
+      title: '需求负责人',
+      body: '接口变动请联系：',
+      memberName: '张三',
+      memberRole: 'IoT 产品线 Owner'
     }
   ];
 
@@ -851,7 +865,7 @@
         contentHtml = `
           <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
           <a class="link-card-box" href="${card.linkUrl || '#'}" target="_blank">
-            <span contenteditable="true" onblur="card.linkTitle=this.innerText">${card.linkTitle || '点击查看完整 PRD 规范'}</span> ➔
+            <span contenteditable="true" onblur="card.linkTitle=this.innerText">${card.linkTitle || '点击查看 PRD 原型'}</span> ➔
           </a>
         `;
       } else if (card.type === 'member') {
@@ -869,9 +883,8 @@
         contentHtml = `
           <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
           <div class="timeline-list">
-            <div class="timeline-item" contenteditable="true">2026-08-15: 需求评审与架构确认</div>
-            <div class="timeline-item" contenteditable="true">2026-08-20: 灰度试运行与出料测试</div>
-            <div class="timeline-item" contenteditable="true">2026-08-30: 全国门店全量上线</div>
+            <div class="timeline-item" contenteditable="true">2026-08-15: 需求评审</div>
+            <div class="timeline-item" contenteditable="true">2026-08-30: 全量上线</div>
           </div>
         `;
       } else if (card.type === 'checklist') {
@@ -904,10 +917,13 @@
           <div class="card-toolbar">
             <span class="drag-handle" draggable="true" title="按住拖拽排序">⠿</span>
             <select class="size-select" onchange="changeSpan('${card.id}', this.value)">
-              <option value="span-1x1" ${card.span === 'span-1x1' ? 'selected' : ''}>尺寸: 1x1 小卡</option>
-              <option value="span-2x1" ${card.span === 'span-2x1' ? 'selected' : ''}>尺寸: 2x1 横卡</option>
-              <option value="span-1x2" ${card.span === 'span-1x2' ? 'selected' : ''}>尺寸: 1x2 纵卡</option>
-              <option value="span-2x2" ${card.span === 'span-2x2' ? 'selected' : ''}>尺寸: 2x2 大卡</option>
+              <option value="span-05x" ${card.span === 'span-05x' ? 'selected' : ''}>0.5x 迷你卡 (1/4宽)</option>
+              <option value="span-075x" ${card.span === 'span-075x' ? 'selected' : ''}>0.75x 紧凑卡 (1/3宽)</option>
+              <option value="span-1x1" ${card.span === 'span-1x1' ? 'selected' : ''}>1.0x 标准卡 (1/2宽)</option>
+              <option value="span-15x" ${card.span === 'span-15x' ? 'selected' : ''}>1.5x 宽屏卡 (3/4宽)</option>
+              <option value="span-2x1" ${card.span === 'span-2x1' ? 'selected' : ''}>2.0x 整行卡 (全宽)</option>
+              <option value="span-1x2" ${card.span === 'span-1x2' ? 'selected' : ''}>1x2 纵向加高卡</option>
+              <option value="span-2x2" ${card.span === 'span-2x2' ? 'selected' : ''}>2x2 超大方卡</option>
             </select>
             <button class="tool-btn" onclick="toggleDark('${card.id}')">🎨 暗黑</button>
             <button class="tool-btn" onclick="removeCard('${card.id}')">❌ 删除</button>
@@ -929,26 +945,26 @@
     });
   }
 
-  function addCard(type) {
+  function addCard(type, defaultSpan = 'span-1x1') {
     const id = 'c' + Date.now();
     if (type === 'metric') {
-      cards.push({ id, type, span: 'span-1x1', kicker: 'METRIC', title: '新增数据指标', number: '100%', body: '描述文字说明。' });
+      cards.push({ id, type, span: defaultSpan, kicker: 'METRIC', title: '指标', number: '99%', body: '描述' });
     } else if (type === 'graphic') {
-      cards.push({ id, type, span: 'span-1x2', kicker: 'GRAPHIC & IMAGE', title: '新功能演示界面', body: '上传原型截图或流程图：', imageUrl: '' });
+      cards.push({ id, type, span: defaultSpan, kicker: 'GRAPHIC', title: '新功能演示', body: '上传原型截图：', imageUrl: '' });
     } else if (type === 'code') {
-      cards.push({ id, type, span: 'span-1x1', dark: true, kicker: 'CODE SPEC', title: '协议格式规范', body: '数据描述：', code: '{\n  "status": "ok"\n}' });
+      cards.push({ id, type, span: defaultSpan, dark: true, kicker: 'CODE SPEC', title: '协议规范', body: '数据描述：', code: '{\n  "status": "ok"\n}' });
     } else if (type === 'diff') {
-      cards.push({ id, type, span: 'span-2x1', kicker: 'COMPARISON', title: '逻辑对比规则', body: '说明文字：', oldText: '❌ 旧逻辑：说明', newText: '✅ 新逻辑：说明' });
+      cards.push({ id, type, span: defaultSpan, kicker: 'COMPARISON', title: '规则对比', body: '说明：', oldText: '❌ 旧逻辑说明', newText: '✅ 新逻辑说明' });
     } else if (type === 'notice') {
-      cards.push({ id, type, span: 'span-1x1', kicker: 'ALERT', title: '注意事项与限制', body: '说明：', alert: '⚠️ 注意提示内容' });
+      cards.push({ id, type, span: defaultSpan, kicker: 'ALERT', title: '限制与提示', body: '说明：', alert: '⚠️ 注意提示内容' });
     } else if (type === 'link') {
-      cards.push({ id, type, span: 'span-1x1', kicker: 'LINK', title: '相关资源跳转', body: '查看外部参考链接：', linkTitle: '打开产品在线原型', linkUrl: '#' });
+      cards.push({ id, type, span: defaultSpan, kicker: 'LINK', title: '资源链接', body: '跳转原型：', linkTitle: '打开产品在线原型', linkUrl: '#' });
     } else if (type === 'member') {
-      cards.push({ id, type, span: 'span-1x1', kicker: 'OWNER', title: '需求责任人', body: '负责干系人沟通：', memberName: '李四', memberRole: 'IoT 平台研发' });
+      cards.push({ id, type, span: defaultSpan, kicker: 'OWNER', title: '负责人', body: '干系人：', memberName: '李四', memberRole: 'IoT 平台研发' });
     } else if (type === 'timeline') {
-      cards.push({ id, type, span: 'span-1x1', kicker: 'TIMELINE', title: '上线节点规划', body: '版本发布节奏：' });
+      cards.push({ id, type, span: defaultSpan, kicker: 'TIMELINE', title: '时间线', body: '发布节点：' });
     } else {
-      cards.push({ id, type: 'checklist', span: 'span-1x1', kicker: 'CHECKLIST', title: '上线确认清单', body: '确认项列表：', items: ['步骤一确认', '步骤二确认'] });
+      cards.push({ id, type: 'checklist', span: defaultSpan, kicker: 'CHECKLIST', title: '确认清单', body: '确认项：', items: ['步骤一确认', '步骤二确认'] });
     }
     renderGrid();
     showToast('已添加新卡片');
