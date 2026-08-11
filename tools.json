@@ -1,0 +1,286 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "json-check",
+      "name": "JSON Check",
+      "description": "JSON 格式化、校验与修复",
+      "category": "tool",
+      "mode": "static",
+      "root": "{hubRoot}/managed",
+      "entry": "json-check.html",
+      "managedSource": "{downloadsRoot}/jsonCheck.html",
+      "tags": ["JSON", "调试", "格式化"],
+      "featured": true,
+      "actions": [
+        { "id": "folder", "label": "打开来源目录", "type": "folder", "target": "{downloadsRoot}" }
+      ]
+    },
+    {
+      "id": "skills-manager",
+      "name": "Skills Manager",
+      "description": "管理本地 Agent Skills",
+      "category": "tool",
+      "mode": "service",
+      "root": "{workspaceRoot}/Skills-Manager",
+      "port": 3456,
+      "url": "http://127.0.0.1:3456",
+      "start": { "command": "node", "args": ["server.js"] },
+      "tags": ["Skills", "Agent", "管理"],
+      "featured": true,
+      "actions": [
+        { "id": "folder", "label": "打开目录", "type": "folder" },
+        { "id": "terminal", "label": "在终端打开", "type": "terminal" }
+      ]
+    },
+    {
+      "id": "new-iot-console",
+      "name": "New IoT Console",
+      "description": "IoT 管理后台与物模型配置",
+      "category": "project",
+      "mode": "service",
+      "root": "{workspaceRoot}/new-iot-console",
+      "port": 5173,
+      "url": "http://127.0.0.1:5173",
+      "requiresNodeModules": true,
+      "start": { "command": "npm", "args": ["run", "dev", "--", "--host", "127.0.0.1", "--port", "5173"] },
+      "tags": ["IoT", "React", "Vite"],
+      "featured": true,
+      "actions": [
+        { "id": "folder", "label": "打开目录", "type": "folder" },
+        { "id": "terminal", "label": "在终端打开", "type": "terminal" }
+      ]
+    },
+    {
+      "id": "lan-shared-service",
+      "name": "局域网共享服务 (192.168.0.159)",
+      "description": "外部/局域网服务器提供的开发预览服务 (http://192.168.0.159:5173/)",
+      "category": "project",
+      "mode": "service",
+      "root": "{hubRoot}",
+      "port": 5173,
+      "url": "http://192.168.0.159:5173/",
+      "start": { "command": "open", "args": ["http://192.168.0.159:5173/"] },
+      "tags": ["局域网", "共享服务", "Vite"],
+      "featured": true,
+      "actions": [
+        { "id": "open-browser", "label": "在浏览器打开", "type": "url", "url": "http://192.168.0.159:5173/" }
+      ]
+    },
+    {
+      "id": "alpaca-blog",
+      "name": "Alpaca Blog",
+      "description": "Hexo 博客与内容管理后台",
+      "category": "project",
+      "mode": "service",
+      "root": "{workspaceRoot}/alpacaA1.github.io",
+      "port": 4000,
+      "url": "http://127.0.0.1:4000",
+      "requiresNodeModules": true,
+      "start": { "command": "npm", "args": ["run", "server", "--", "-p", "4000", "-i", "127.0.0.1"] },
+      "tags": ["博客", "Hexo", "CMS"],
+      "featured": true,
+      "actions": [
+        {
+          "id": "admin",
+          "label": "启动管理后台",
+          "type": "service",
+          "cwd": "{workspaceRoot}/alpacaA1.github.io/admin-app",
+          "port": 5175,
+          "url": "http://127.0.0.1:5175",
+          "requiresNodeModules": true,
+          "command": "npm",
+          "args": ["run", "dev", "--", "--host", "127.0.0.1", "--port", "5175"]
+        },
+        { "id": "posts", "label": "打开文章目录", "type": "folder", "target": "{workspaceRoot}/alpacaA1.github.io/source/_posts" },
+        { "id": "folder", "label": "打开项目目录", "type": "folder" }
+      ]
+    },
+    {
+      "id": "tea-machine-prototype",
+      "name": "Tea Machine Prototype",
+      "description": "茶饮机上位机交互原型",
+      "category": "project",
+      "mode": "service",
+      "root": "{workspaceRoot}/tea-machine-prototype",
+      "port": 5180,
+      "url": "http://127.0.0.1:5180",
+      "requiresNodeModules": true,
+      "start": { "command": "npm", "args": ["run", "dev", "--", "--host", "127.0.0.1", "--port", "5180"] },
+      "tags": ["茶饮机", "原型", "React"],
+      "actions": [
+        { "id": "folder", "label": "打开目录", "type": "folder" },
+        { "id": "terminal", "label": "在终端打开", "type": "terminal" }
+      ]
+    },
+    {
+      "id": "tea-machine-android",
+      "name": "Tea Machine Android",
+      "description": "茶饮机 Android 与 Web 预览",
+      "category": "project",
+      "mode": "service",
+      "root": "{workspaceRoot}/tea-machine-android",
+      "port": 5181,
+      "url": "http://127.0.0.1:5181",
+      "requiresNodeModules": true,
+      "start": { "command": "npm", "args": ["run", "dev", "--", "--host", "127.0.0.1", "--port", "5181"] },
+      "tags": ["茶饮机", "Android", "Capacitor"],
+      "actions": [
+        { "id": "android", "label": "打开 Android 工程", "type": "folder", "target": "{workspaceRoot}/tea-machine-android/android" },
+        { "id": "folder", "label": "打开目录", "type": "folder" }
+      ]
+    },
+    {
+      "id": "iot-attribute-frontend",
+      "name": "IoT Attribute Frontend",
+      "description": "茶饮机设备属性轻量前端",
+      "category": "project",
+      "mode": "static",
+      "root": "{workspaceRoot}/iot-attribute-frontend",
+      "entry": "index.html",
+      "tags": ["IoT", "属性", "原型"],
+      "actions": [
+        {
+          "id": "dev",
+          "label": "启动开发模式",
+          "type": "service",
+          "port": 5174,
+          "url": "http://127.0.0.1:5174",
+          "requiresNodeModules": true,
+          "command": "npm",
+          "args": ["run", "dev", "--", "--host", "127.0.0.1", "--port", "5174"]
+        },
+        { "id": "source", "label": "打开原始单页", "type": "file", "target": "{workspaceRoot}/iot 属性前端.html" },
+        { "id": "folder", "label": "打开目录", "type": "folder" }
+      ]
+    },
+    {
+      "id": "memos-extension",
+      "name": "Memos Quick Capture",
+      "description": "浏览器中的快速笔记与待办",
+      "category": "project",
+      "mode": "extension",
+      "root": "{workspaceRoot}/memos-extension",
+      "requiresNodeModules": true,
+      "tags": ["Chrome", "扩展", "Memos"],
+      "actions": [
+        { "id": "chrome", "label": "打开扩展管理", "type": "chrome", "target": "chrome://extensions" },
+        { "id": "dist", "label": "打开构建目录", "type": "folder", "target": "{workspaceRoot}/memos-extension/dist" },
+        { "id": "folder", "label": "打开源码目录", "type": "folder" }
+      ]
+    },
+    {
+      "id": "data-refresh",
+      "name": "数据刷新",
+      "description": "设备数据刷新页面复刻",
+      "category": "prototype",
+      "mode": "static",
+      "root": "{workspaceRoot}/数据刷新",
+      "entry": "index.html",
+      "tags": ["数据刷新", "静态原型"]
+    },
+    {
+      "id": "iot-3d-demo",
+      "name": "IoT 3D 热区测试",
+      "description": "设备 3D 模块与热区交互",
+      "category": "prototype",
+      "mode": "static",
+      "root": "{workspaceRoot}/iot-3d-demo",
+      "entry": "index.html",
+      "tags": ["3D", "IoT", "热区"]
+    },
+    {
+      "id": "kira-omega",
+      "name": "KIRA OMEGA IoT",
+      "description": "IoT 专业透视控制中心",
+      "category": "prototype",
+      "mode": "static",
+      "root": "{workspaceRoot}",
+      "entry": "untitled.html",
+      "tags": ["IoT", "控制台", "单页"]
+    },
+    {
+      "id": "calibration-training",
+      "name": "自动校准功能培训",
+      "description": "自动校准培训与演示材料",
+      "category": "prototype",
+      "mode": "static",
+      "root": "{workspaceRoot}",
+      "entry": "自动校准功能培训.bento.html",
+      "tags": ["校准", "培训", "演示"]
+    },
+    {
+      "id": "auto-calibration-data",
+      "name": "自动校准数据",
+      "description": "上线前稳定出料数据与分析素材",
+      "category": "resource",
+      "mode": "folder",
+      "root": "{workspaceRoot}/自动校准",
+      "tags": ["Excel", "校准", "数据"]
+    },
+    {
+      "id": "full-auto-calibration",
+      "name": "全自动校准模板",
+      "description": "全自动校准分析模板与明细",
+      "category": "resource",
+      "mode": "folder",
+      "root": "{workspaceRoot}/全自动校准模板",
+      "tags": ["Excel", "模板", "校准"]
+    },
+    {
+      "id": "iot-materials",
+      "name": "IoT 产品资料",
+      "description": "机器参数、页面截图与需求输入",
+      "category": "resource",
+      "mode": "folder",
+      "root": "{workspaceRoot}/IOT",
+      "tags": ["IoT", "PDF", "设计参考"]
+    },
+    {
+      "id": "superpowers-docs",
+      "name": "产品 Specs 与 Plans",
+      "description": "Superpowers 规格与实施计划",
+      "category": "resource",
+      "mode": "folder",
+      "root": "{workspaceRoot}/docs/superpowers",
+      "tags": ["PRD", "Specs", "Plans"]
+    },
+    {
+      "id": "candidate-data-analyzer",
+      "name": "Data Analyzer App",
+      "description": "Excel 数据分析工具，待确认是否收录",
+      "category": "candidate",
+      "mode": "folder",
+      "root": "{documentsRoot}/anti-gravity/data-analyzer-app",
+      "tags": ["候选", "Excel", "React"]
+    },
+    {
+      "id": "candidate-pos-app",
+      "name": "POS App",
+      "description": "POS 前端项目，待确认是否收录",
+      "category": "candidate",
+      "mode": "folder",
+      "root": "{documentsRoot}/anti-gravity/pos-app",
+      "tags": ["候选", "POS", "React"]
+    },
+    {
+      "id": "candidate-tea-maker-iot",
+      "name": "Tea Maker IoT",
+      "description": "旧版 IoT 项目，存在嵌套目录",
+      "category": "candidate",
+      "mode": "folder",
+      "root": "{documentsRoot}/IOT/tea-maker-iot",
+      "tags": ["候选", "IoT", "旧项目"]
+    },
+    {
+      "id": "candidate-silo-batch",
+      "name": "料仓物料批次管理",
+      "description": "下载目录中的 Vite 项目，需要依赖与 API Key",
+      "category": "candidate",
+      "mode": "folder",
+      "root": "{downloadsRoot}/料仓物料批次管理系统-(silo-material-batch-management-system)",
+      "requiresNodeModules": true,
+      "tags": ["候选", "料仓", "Gemini"]
+    }
+  ]
+}
