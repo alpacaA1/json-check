@@ -3,448 +3,475 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>JSON Check · 数据调试工具</title>
+<title>Tool Hub · 云端工具与原型控制台</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
   :root {
-    --bg: #0b0e12; --panel: #141920; --panel-2: #1a2029; --border: rgba(255,255,255,.09);
-    --fg: #e6eaf0; --muted: #8993a4; --accent: #66b3ff; --success: #7bd88f;
-    --danger: #ff7575; --warn: #f6c76e; --key: #84d8ff; --str: #c8e6a0;
-    --num: #f7a27c; --bool: #ffb86b; --null: #caa6f7;
+    --bg-main: #0b0f19;
+    --bg-card: rgba(22, 30, 46, 0.7);
+    --bg-card-hover: rgba(30, 41, 64, 0.85);
+    --border-card: rgba(255, 255, 255, 0.08);
+    --border-hover: rgba(99, 102, 241, 0.4);
+    --text-primary: #f8fafc;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-indigo: #6366f1;
+    --accent-purple: #a855f7;
+    --accent-cyan: #06b6d4;
+    --accent-emerald: #10b981;
+    --accent-amber: #f59e0b;
+    --glow-indigo: rgba(99, 102, 241, 0.15);
   }
-  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "SF Mono", Menlo, monospace; background: var(--bg); color: var(--fg); min-height: 100vh; height: 100vh; display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; }
-  header { padding: 14px 20px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
-  header h1 { font-size: 17px; font-weight: 650; letter-spacing: .25px; }
-  header h1 span { color: var(--accent); }
-  .toolbar, .opts { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-  .toolbar { margin-left: auto; }
-  .opts { font-size: 12px; color: var(--muted); }
-  .opts label { display: flex; align-items: center; gap: 5px; cursor: pointer; min-height: 32px; }
-  .opts input[type=number], .opts select { width: 58px; background: var(--bg); border: 1px solid var(--border); color: var(--fg); border-radius: 5px; padding: 5px 6px; }
-  .opts select { width: 68px; }
-  button { min-height: 34px; background: var(--accent); color: #08111c; border: 1px solid transparent; border-radius: 6px; padding: 7px 13px; cursor: pointer; font: inherit; font-size: 12px; font-weight: 700; transition: opacity .15s, transform .08s, border-color .15s, color .15s; touch-action: manipulation; }
-  button:hover { opacity: .88; }
-  button:active { transform: scale(.96); }
-  button:disabled { opacity: .4; cursor: not-allowed; transform: none; }
-  button.ghost { background: transparent; border-color: var(--border); color: var(--muted); }
-  button.ghost:hover { color: var(--fg); border-color: var(--accent); }
-  .main { display: flex; flex: 1; min-height: 0; overflow: hidden; }
-  .pane { flex: 0 0 50%; min-width: 0; max-width: 50%; display: flex; flex-direction: column; border-right: 1px solid var(--border); }
-  .pane:last-child { border-right: none; }
-  .pane-head { padding: 8px 14px; font-size: 12px; color: var(--muted); background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 8px; min-height: 38px; }
-  .pane-head .badge { background: var(--panel-2); border: 1px solid var(--border); padding: 2px 7px; border-radius: 10px; font-size: 10px; color: var(--fg); font-variant-numeric: tabular-nums; }
-  textarea { flex: 1; width: 100%; min-width: 0; overflow-y: auto; overflow-x: hidden; background: var(--bg); color: var(--fg); border: none; outline: none; resize: none; padding: 14px; font: 13.5px/1.55 inherit; tab-size: 2; white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word; }
-  textarea::placeholder { color: var(--muted); }
-  .status { padding: 7px 14px; font-size: 12px; background: var(--panel); border-top: 1px solid var(--border); display: flex; align-items: center; gap: 9px; min-height: 36px; }
-  .status .dot { width: 8px; height: 8px; flex: 0 0 auto; border-radius: 50%; background: var(--muted); }
-  .status.ok .dot { background: var(--success); box-shadow: 0 0 0 3px rgba(123,216,143,.1); }
-  .status.warn .dot { background: var(--warn); box-shadow: 0 0 0 3px rgba(246,199,110,.1); }
-  .status.err .dot { background: var(--danger); box-shadow: 0 0 0 3px rgba(255,117,117,.1); }
-  .status .msg { color: var(--muted); }
-  .status.ok .msg { color: var(--success); }
-  .status.warn .msg { color: var(--warn); }
-  .status.err .msg { color: var(--danger); }
-  .status .counts { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .status .pos { color: var(--warn); margin-left: auto; }
-  .output-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
-  .error-banner { margin: 12px 14px 0; padding: 11px 12px; border: 1px solid rgba(255,117,117,.32); border-radius: 7px; background: rgba(255,117,117,.08); color: var(--fg); font-size: 12px; line-height: 1.6; }
-  .error-banner[hidden] { display: none; }
-  .error-banner strong { color: var(--danger); display: block; margin-bottom: 3px; }
-  .error-banner .meta { color: var(--muted); }
-  .fix-preview { margin: 10px 14px 0; padding: 11px 12px; border: 1px solid rgba(102,179,255,.3); border-radius: 7px; background: rgba(102,179,255,.08); font-size: 12px; line-height: 1.6; }
-  .fix-preview[hidden] { display: none; }
-  .fix-preview strong { color: var(--accent); }
-  .fix-preview .fix-actions { display: flex; gap: 8px; margin-top: 9px; }
-  .fix-preview .fix-note { color: var(--muted); }
-  #output { flex: 1; overflow: auto; padding: 14px 0; font-size: 13.5px; line-height: 1.6; min-width: 0; tab-size: 2; }
-  .code-line { display: flex; min-width: max-content; padding-right: 18px; }
-  .line-no { width: 50px; flex: 0 0 50px; padding-right: 12px; text-align: right; color: #4e5969; user-select: none; }
-  .line-code { white-space: pre; padding-left: 2px; }
-  .code-line.is-error { background: rgba(255,117,117,.08); }
-  .error-char { background: rgba(255,117,117,.3); color: #fff; border-bottom: 2px solid var(--danger); border-radius: 2px; }
-  .plain-output { white-space: pre; padding: 0 14px; color: var(--muted); }
-  .perf-notice { margin: 0 14px 10px; padding: 7px 9px; border: 1px solid rgba(246,199,110,.25); background: rgba(246,199,110,.07); border-radius: 6px; color: var(--warn); font-size: 11px; }
-  .issues { border-top: 1px solid var(--border); background: var(--panel); max-height: 190px; overflow: auto; }
-  .issues[hidden] { display: none; }
-  .issues-head { padding: 8px 14px 5px; color: var(--muted); font-size: 11px; display: flex; justify-content: space-between; }
-  .issue-item { width: 100%; min-height: 0; padding: 8px 14px; display: grid; grid-template-columns: 18px 1fr auto; gap: 8px; text-align: left; border: 0; border-top: 1px solid rgba(255,255,255,.045); border-radius: 0; background: transparent; color: var(--fg); font-size: 11px; font-weight: 500; }
-  .issue-item:hover { background: rgba(255,255,255,.045); opacity: 1; }
-  .issue-icon { color: var(--danger); }
-  .issue-item.warn .issue-icon { color: var(--warn); }
-  .issue-main { min-width: 0; }
-  .issue-title { color: var(--fg); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .issue-detail { color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .issue-pos { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
-  .jk-key { color: var(--key); }
-  .jk-str { color: var(--str); }
-  .jk-num { color: var(--num); }
-  .jk-bool { color: var(--bool); }
-  .jk-null { color: var(--null); }
-  .jk-punc { color: var(--muted); }
-  .nest-badge { display: inline-block; background: rgba(123,216,143,.15); color: var(--success); font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 6px; border: 1px solid rgba(123,216,143,.3); vertical-align: middle; }
-  .copy-btn { font-size: 11px; padding: 3px 9px; min-height: 27px; margin-left: auto; }
-  @media (max-width: 760px) { body { height: auto; min-height: 100vh; } header { padding: 12px; } header h1 { width: 100%; } .toolbar { margin-left: 0; } .main { flex-direction: column; overflow: visible; } .pane { flex: 0 0 auto; max-width: none; width: 100%; min-height: 46vh; border-right: none; border-bottom: 1px solid var(--border); } .pane:last-child { border-bottom: 0; } textarea { min-height: 34vh; } #output { min-height: 34vh; } .status { flex-wrap: wrap; } .status .counts { width: 100%; margin-left: 17px; } .issues { max-height: 170px; } }
-  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition-duration: .01ms !important; } }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-main);
+    background-image: 
+      radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.1) 0px, transparent 50%);
+    color: var(--text-primary);
+    min-height: 100vh;
+    padding: 32px 24px 60px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .container {
+    max-width: 1160px;
+    margin: 0 auto;
+  }
+
+  /* Header */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 36px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border-card);
+    flex-wrap: wrap;
+    gap: 20px;
+  }
+
+  .brand-group {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .brand-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent-indigo), var(--accent-purple));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.35);
+  }
+
+  .brand-icon svg { width: 26px; height: 26px; stroke: #fff; fill: none; stroke-width: 2.2; }
+
+  .brand-title h1 {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .brand-title p {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .header-badge {
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: var(--accent-emerald);
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .dot-ping {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent-emerald);
+    box-shadow: 0 0 8px var(--accent-emerald);
+  }
+
+  /* Controls Section */
+  .controls {
+    display: flex;
+    gap: 16px;
+    margin-bottom: 32px;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .search-box {
+    position: relative;
+    flex: 1;
+    min-width: 280px;
+    max-width: 480px;
+  }
+
+  .search-box input {
+    width: 100%;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 12px;
+    padding: 12px 16px 12px 44px;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+  }
+
+  .search-box input:focus {
+    border-color: var(--accent-indigo);
+    box-shadow: 0 0 0 4px var(--glow-indigo);
+  }
+
+  .search-box svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px; height: 18px;
+    stroke: var(--text-muted);
+  }
+
+  .category-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .pill {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .pill:hover, .pill.active {
+    background: var(--accent-indigo);
+    border-color: var(--accent-indigo);
+    color: #fff;
+    box-shadow: 0 4px 12px var(--glow-indigo);
+  }
+
+  /* Grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 20px;
+  }
+
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 16px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    backdrop-filter: blur(12px);
+    position: relative;
+    overflow: hidden;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--card-accent, var(--accent-indigo)), var(--accent-purple));
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: var(--border-hover);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.3);
+    background: var(--bg-card-hover);
+  }
+
+  .card:hover::before { opacity: 1; }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+
+  .card-avatar {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--card-accent, var(--accent-indigo));
+    flex-shrink: 0;
+  }
+
+  .card-meta h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    line-height: 1.3;
+  }
+
+  .card-meta .tag-list {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+
+  .tag {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-secondary);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: 20px;
+    flex-grow: 1;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--card-accent, var(--accent-indigo));
+  }
+
+  .card-footer svg {
+    width: 16px; height: 16px;
+    stroke: currentColor;
+    transition: transform 0.2s ease;
+  }
+
+  .card:hover .card-footer svg {
+    transform: translateX(4px);
+  }
+
+  /* Empty state */
+  .empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--text-muted);
+  }
+
+  footer {
+    margin-top: 60px;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
 </style>
 </head>
 <body>
-<header>
-  <h1>JSON <span>Check</span> · 数据调试</h1>
-  <div class="opts">
-    <label>缩进 <input type="number" id="indent" value="2" min="0" max="8"></label>
-    <label>深度 <select id="depth"><option value="-1">无限</option><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option></select></label>
-    <label><input type="checkbox" id="unescape" checked> 解析转义字符串</label>
-  </div>
-  <div class="toolbar">
-    <button class="ghost" onclick="loadSample()">示例</button>
-    <button class="ghost" onclick="clearAll()">清空</button>
-    <button class="ghost" id="fixBtn" onclick="autoFix()" disabled>自动修复</button>
-    <button class="ghost" id="undoBtn" onclick="undoFix()" disabled>撤销修复</button>
-    <button onclick="format()">格式化</button>
-    <button onclick="minify()">压缩</button>
-  </div>
-</header>
-<div class="main">
-  <div class="pane">
-    <div class="pane-head">输入 <span class="badge" id="inLen">0 chars</span></div>
-    <textarea id="input" wrap="soft" aria-label="JSON 输入" placeholder="粘贴 JSON，支持多级内嵌转义字符串自动展开…"></textarea>
-    <div class="status" id="status"><span class="dot"></span><span class="msg">等待输入</span><span class="counts"></span></div>
-  </div>
-  <div class="pane">
-    <div class="pane-head">诊断输出 <span class="badge" id="outLen">0 chars</span><button class="ghost copy-btn" onclick="copyOutput()">复制</button></div>
-    <div class="output-wrap">
-      <div class="error-banner" id="errorBanner" hidden></div>
-      <div class="fix-preview" id="fixPreview" hidden></div>
-      <div id="performanceNotice" class="perf-notice" hidden>JSON 内容较大，已关闭语法高亮，保留格式化、校验和复制。</div>
-      <pre id="output" aria-live="polite"></pre>
-      <div class="issues" id="issues" hidden><div class="issues-head"><span>问题列表</span><span id="issueCount"></span></div><div id="issueList"></div></div>
+  <div class="container">
+    <header>
+      <div class="brand-group">
+        <div class="brand-icon">
+          <svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div class="brand-title">
+          <h1>Tool Hub · 静态原型库</h1>
+          <p>云端单页工具、产品原型与交互测试集中管理</p>
+        </div>
+      </div>
+      <div class="header-badge">
+        <span class="dot-ping"></span> GitHub Pages 云端服务运行中
+      </div>
+    </header>
+
+    <div class="controls">
+      <div class="search-box">
+        <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <input type="text" id="searchInput" placeholder="搜索原型名称、关键词或标签...">
+      </div>
+      <div class="category-pills" id="categoryPills">
+        <button class="pill active" data-cat="all">全部原型 (7)</button>
+        <button class="pill" data-cat="tool">单页工具</button>
+        <button class="pill" data-cat="prototype">交互原型</button>
+        <button class="pill" data-cat="iot">IoT 控制台</button>
+      </div>
     </div>
+
+    <div class="grid" id="toolsGrid">
+      <!-- Cards rendered via JavaScript -->
+    </div>
+
+    <footer>
+      Tool Hub Cloud Hub · 托管于 GitHub Pages · 随处即用
+    </footer>
   </div>
-</div>
+
 <script>
-const $ = id => document.getElementById(id);
-const input = $('input'), output = $('output');
-const LARGE_JSON_LIMIT = 100000;
-let lastOutputText = '';
-let currentIssues = [];
-let pendingFix = null;
-let lastInputBeforeFix = null;
-let fixAvailabilityTimer = null;
-
-function setStatus(type, msg, counts = '', pos = '') {
-  const s = $('status');
-  s.className = 'status ' + type;
-  s.querySelector('.msg').textContent = msg;
-  s.querySelector('.counts').textContent = counts;
-  let pel = s.querySelector('.pos');
-  if (pos) { if (!pel) { pel = document.createElement('span'); pel.className = 'pos'; s.appendChild(pel); } pel.textContent = pos; }
-  else if (pel) pel.remove();
-}
-
-function escapeHtml(value) { return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
-
-function pathFor(parent, key) {
-  return Array.isArray(parent) ? `${parent.path}[${key}]` : `${parent.path}.${key}`;
-}
-
-function analyzeParseError(error, raw) {
-  const message = error && error.message ? error.message : String(error);
-  const positionMatch = message.match(/position\s+(\d+)/i) || message.match(/at\s+position\s+(\d+)/i);
-  const lineColumnMatch = message.match(/line\s+(\d+).*column\s+(\d+)/i);
-  const tokenMatch = message.match(/Unexpected token ['"](.?)['"]/i);
-  const lineColumnPosition = lineColumnMatch ? locationToIndex(raw, Number(lineColumnMatch[1]), Number(lineColumnMatch[2])) : -1;
-  const hintedPosition = tokenMatch ? raw.lastIndexOf(tokenMatch[1]) : -1;
-  let position = positionMatch ? Math.min(Number(positionMatch[1]), raw.length) : (lineColumnPosition >= 0 ? lineColumnPosition : (message.includes('end of JSON') ? raw.length : hintedPosition));
-  if (position < 0) position = 0;
-  const token = raw[position] || '';
-  let type = 'syntax', title = 'JSON 格式错误', reason = 'JSON 结构中存在无法解析的内容', suggestion = '检查括号、逗号和字符串引号是否匹配';
-  const structureIssue = scanStructure(raw);
-  if (structureIssue && structureIssue.type === 'mismatch') { type = 'bracket-mismatch'; title = '括号类型不匹配'; reason = `此处应为 ${structureIssue.expected}，实际为 ${structureIssue.actual}`; suggestion = `检查第${structureIssue.openLine}行开始的结构，并将此处改为 ${structureIssue.expected}`; position = structureIssue.position; }
-  else if (structureIssue && structureIssue.type === 'string') { type = 'unclosed-string'; title = '字符串未结束'; reason = '字符串缺少结束双引号'; suggestion = '补充结束双引号，或检查字符串中的双引号是否已转义'; position = structureIssue.position; }
-  else if (/end of JSON input|unexpected end/i.test(message) || (structureIssue && structureIssue.type === 'unclosed')) { type = 'unclosed'; title = 'JSON 未结束'; reason = structureIssue && structureIssue.expected ? `内容结束前缺少 ${structureIssue.expected}` : '内容在结构闭合前结束，可能缺少 } 或 ]'; suggestion = '从最内层结构开始补齐闭合符号'; }
-  else if (token === '}' || /Unexpected token ['"]?}/i.test(message)) { type = 'trailing-comma'; title = '对象结构错误'; reason = '对象结束前存在非法字符，可能是多余逗号'; suggestion = '删除对象最后一个字段后的逗号'; }
-  else if (token === ']' || /Unexpected token ['"]?]/i.test(message)) { type = 'array-structure'; title = '数组结构错误'; reason = '数组结束位置存在非法字符，可能是多余逗号或括号不匹配'; suggestion = '检查数组最后一项后的逗号，并确认括号成对'; }
-  else if (token === "'" || /single quote/i.test(message)) { type = 'single-quote'; title = 'JSON 使用了单引号'; reason = 'JSON 字符串必须使用双引号'; suggestion = '把字符串外层引号改为双引号'; }
-  else if (/Unexpected number/i.test(message)) { type = 'number'; title = '数字格式错误'; reason = '数字格式不符合 JSON 规范'; suggestion = '检查小数点、负号和数字之间是否缺少逗号'; }
-  else if (/Unexpected string/i.test(message)) { type = 'missing-comma'; title = '字段之间可能缺少逗号'; reason = '前一个值后面紧接着出现了新的字符串'; suggestion = '在两个字段或数组项之间补充逗号'; }
-  const lineCol = indexToLocation(raw, position);
-  return { level: 'ERROR', type, title, message: reason, reason, suggestion, position, line: lineCol.line, column: lineCol.column, path: inferPath(raw, position) };
-}
-
-function locationToIndex(raw, targetLine, targetColumn) {
-  let line = 1, column = 1;
-  for (let i = 0; i < raw.length; i++) {
-    if (line === targetLine && column === targetColumn) return i;
-    if (raw[i] === '\n') { line++; column = 1; } else column++;
-  }
-  return raw.length;
-}
-
-function scanStructure(raw) {
-  const stack = [], pairs = { '{': '}', '[': ']' }; let inString = false, escaped = false, stringStart = -1;
-  for (let i = 0; i < raw.length; i++) {
-    const ch = raw[i];
-    if (inString) { if (escaped) escaped = false; else if (ch === '\\') escaped = true; else if (ch === '"') inString = false; continue; }
-    if (ch === '"') { inString = true; stringStart = i; }
-    else if (pairs[ch]) stack.push({ opener: ch, expected: pairs[ch], position: i, ...indexToLocation(raw, i) });
-    else if (ch === '}' || ch === ']') {
-      const opened = stack[stack.length - 1];
-      if (!opened || opened.expected !== ch) return { type: 'mismatch', actual: ch, expected: opened ? opened.expected : '无', position: i, openLine: opened ? opened.line : 1 };
-      stack.pop();
+  const items = [
+    {
+      id: 'json-check',
+      name: 'JSON Check',
+      desc: 'JSON 格式化、智能校验、实时修复与视图调试工具。',
+      category: 'tool',
+      tags: ['JSON', '调试', '格式化'],
+      url: 'prototypes/json-check.html',
+      accent: '#6366f1'
+    },
+    {
+      id: 'skills-manager',
+      name: 'Skills Manager',
+      desc: 'Agent Skills 本地与云端资源管理控制台单页。',
+      category: 'tool',
+      tags: ['Skills', 'Agent', '管理'],
+      url: 'prototypes/skills-manager.html',
+      accent: '#06b6d4'
+    },
+    {
+      id: 'iot-attribute',
+      name: 'IoT 设备属性前端',
+      desc: '茶饮机/设备属性状态轻量前端展示与交互原型。',
+      category: 'iot',
+      tags: ['IoT', '属性', '设备'],
+      url: 'prototypes/iot-attribute-frontend.html',
+      accent: '#10b981'
+    },
+    {
+      id: 'kira-omega',
+      name: 'KIRA OMEGA IoT',
+      desc: 'IoT 专业透视控制中心与高阶可视化监控原型。',
+      category: 'iot',
+      tags: ['IoT', '控制台', '单页'],
+      url: 'prototypes/kira-omega.html',
+      accent: '#a855f7'
+    },
+    {
+      id: 'calibration-training',
+      name: '自动校准功能培训',
+      desc: '设备自动校准流程培训、演示与 Bento 结构化说明。',
+      category: 'prototype',
+      tags: ['校准', '培训', '演示'],
+      url: 'prototypes/calibration-training.html',
+      accent: '#f59e0b'
+    },
+    {
+      id: 'data-refresh',
+      name: '数据刷新原型',
+      desc: '设备数据刷新页面复刻与数据重载状态原型。',
+      category: 'prototype',
+      tags: ['数据刷新', '静态原型'],
+      url: 'prototypes/data-refresh/index.html',
+      accent: '#3b82f6'
+    },
+    {
+      id: 'iot-3d-demo',
+      name: 'IoT 3D 热区测试',
+      desc: '设备 3D 结构模块渲染与热区感知交互测试。',
+      category: 'prototype',
+      tags: ['3D', 'IoT', '热区'],
+      url: 'prototypes/iot-3d-demo/index.html',
+      accent: '#ec4899'
     }
-  }
-  if (inString) return { type: 'string', position: stringStart };
-  const opened = stack[stack.length - 1];
-  return opened ? { type: 'unclosed', expected: opened.expected, position: raw.length, openLine: opened.line } : null;
-}
+  ];
 
-function indexToLocation(raw, index) {
-  let line = 1, column = 1;
-  for (let i = 0; i < index && i < raw.length; i++) { if (raw[i] === '\n') { line++; column = 1; } else column++; }
-  return { line, column };
-}
+  let activeCat = 'all';
+  let searchQuery = '';
 
-function formatLocation(issue) { return `第${issue.line}行，第${issue.column}列`; }
+  function render() {
+    const grid = document.getElementById('toolsGrid');
+    const filtered = items.filter(item => {
+      const matchCat = activeCat === 'all' || item.category === activeCat;
+      const haystack = (item.name + ' ' + item.desc + ' ' + item.tags.join(' ')).toLowerCase();
+      const matchSearch = !searchQuery || haystack.includes(searchQuery.toLowerCase());
+      return matchCat && matchSearch;
+    });
 
-function inferPath(raw, position) {
-  const stack = [{ type: 'root', path: '$', nextIndex: 0 }]; let pendingPath = null;
-  for (let i = 0; i < position; i++) {
-    const ch = raw[i], current = stack[stack.length - 1];
-    if (ch === '"') {
-      let value = '', escaped = false, j = i + 1;
-      for (; j < position; j++) { const part = raw[j]; if (escaped) { value += part; escaped = false; } else if (part === '\\') escaped = true; else if (part === '"') break; else value += part; }
-      let next = j + 1; while (/\s/.test(raw[next] || '')) next++;
-      if (current.type === 'object' && raw[next] === ':') pendingPath = `${current.path}.${value}`;
-      i = j; continue;
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div class="empty-state">没有找到匹配的工具或原型</div>`;
+      return;
     }
-    if (ch === '{' || ch === '[') { const path = pendingPath || (current.type === 'array' ? `${current.path}[${current.nextIndex}]` : current.path); stack.push({ type: ch === '{' ? 'object' : 'array', path, nextIndex: 0 }); pendingPath = null; }
-    else if (ch === ',') { if (current.type === 'array') current.nextIndex++; pendingPath = null; }
-    else if (ch === '}' || ch === ']') { if (stack.length > 1) stack.pop(); }
-  }
-  return pendingPath || stack[stack.length - 1].path || '$';
-}
 
-function getNestedLocation(raw, path, nestedPosition) {
-  const key = path.match(/(?:\.([^\.\[]+)|\[(\d+)\])$/);
-  const needle = key && key[1] ? `"${key[1]}"` : null;
-  let keyIndex = needle ? raw.lastIndexOf(needle) : -1;
-  if (keyIndex < 0) return { position: Math.min(nestedPosition, raw.length), ...indexToLocation(raw, Math.min(nestedPosition, raw.length)) };
-  const colon = raw.indexOf(':', keyIndex + needle.length);
-  let quote = colon + 1;
-  while (/\s/.test(raw[quote] || '')) quote++;
-  const delimiter = raw[quote];
-  if (delimiter !== '"' && delimiter !== "'") return { position: colon, ...indexToLocation(raw, colon) };
-  let decoded = 0, escaped = false, sourceIndex = quote + 1;
-  for (; sourceIndex < raw.length; sourceIndex++) {
-    const ch = raw[sourceIndex];
-    if (ch === delimiter && !escaped) break;
-    if (ch === '\\' && !escaped) { escaped = true; continue; }
-    if (escaped) escaped = false;
-    if (decoded >= nestedPosition) break;
-    decoded++;
+    grid.innerHTML = filtered.map(item => `
+      <a href="${item.url}" class="card" style="--card-accent: ${item.accent}">
+        <div>
+          <div class="card-header">
+            <div class="card-avatar">${item.name.slice(0, 2)}</div>
+            <div class="card-meta">
+              <h2>${item.name}</h2>
+              <div class="tag-list">
+                ${item.tags.map(t => `<span class="tag">${t}</span>`).join('')}
+              </div>
+            </div>
+          </div>
+          <div class="card-desc">${item.desc}</div>
+        </div>
+        <div class="card-footer">
+          <span>直接运行原型</span>
+          <svg fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </div>
+      </a>
+    `).join('');
   }
-  return { position: sourceIndex, ...indexToLocation(raw, sourceIndex) };
-}
 
-function deepParse(obj, depth, current, path, nestedIssues, nestedSuccess, raw) {
-  if (current === depth || obj === null || typeof obj !== 'object') return obj;
-  for (const key of Object.keys(obj)) {
-    const value = obj[key], childPath = Array.isArray(obj) ? `${path}[${key}]` : `${path}.${key}`;
-    if (typeof value === 'string' && value.trim().length > 1 && /^[\[{]/.test(value.trim())) {
-      try {
-        const parsed = JSON.parse(value.trim());
-        nestedSuccess.count++;
-        obj[key] = deepParse(parsed, depth, current + 1, childPath, nestedIssues, nestedSuccess, raw);
-      } catch (error) {
-        const parsedIssue = analyzeParseError(error, value.trim());
-        const location = getNestedLocation(raw, childPath, parsedIssue.position);
-        nestedIssues.push({ level: 'WARN', type: 'nested', title: '嵌套 JSON 解析失败', message: parsedIssue.reason, reason: parsedIssue.reason, suggestion: parsedIssue.suggestion, path: childPath, rawValue: value, position: location.position, line: location.line, column: location.column });
-      }
-    } else if (value && typeof value === 'object') {
-      obj[key] = deepParse(value, depth, current + 1, childPath, nestedIssues, nestedSuccess, raw);
+  document.getElementById('searchInput').addEventListener('input', e => {
+    searchQuery = e.target.value;
+    render();
+  });
+
+  document.getElementById('categoryPills').addEventListener('click', e => {
+    if (e.target.classList.contains('pill')) {
+      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      e.target.classList.add('active');
+      activeCat = e.target.dataset.cat;
+      render();
     }
-  }
-  return obj;
-}
+  });
 
-function getOpts() { return { indent: parseInt($('indent').value, 10) || 0, depth: parseInt($('depth').value, 10), unescape: $('unescape').checked }; }
-
-function highlight(jsonStr) {
-  const esc = escapeHtml(jsonStr);
-  return esc.replace(/("(?:\\.|[^"\\])*"\s*:\s*)("(?:\\.|[^"\\])*"|\b-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b|\btrue\b|\bfalse\b|\bnull\b)|("(?:\\.|[^"\\])*"\s*:)|("(?:\\.|[^"\\])*" )|("(?:\\.|[^"\\])*")|(\b-?\d+(?:\.\d+)?(?:[eE][+-]?\d+)?\b)|(\btrue\b|\bfalse\b)|(\bnull\b)|([{}\[\],:])/g,
-    (m, key, value, keyOnly, stringWithSpace, string, num, bool, nul, punc) => { if (key) return `<span class="jk-key">${key}</span>${tokenClass(value)}`; if (keyOnly) return `<span class="jk-key">${keyOnly}</span>`; if (stringWithSpace) return `<span class="jk-str">${stringWithSpace}</span>`; if (string) return `<span class="jk-str">${string}</span>`; if (num) return `<span class="jk-num">${num}</span>`; if (bool) return `<span class="jk-bool">${bool}</span>`; if (nul) return `<span class="jk-null">${nul}</span>`; return `<span class="jk-punc">${punc}</span>`; });
-}
-
-function tokenClass(token) { if (!token) return ''; if (token[0] === '"') return `<span class="jk-str">${token}</span>`; if (/^(true|false)$/.test(token)) return `<span class="jk-bool">${token}</span>`; if (token === 'null') return `<span class="jk-null">${token}</span>`; return `<span class="jk-num">${token}</span>`; }
-
-function renderCode(text, highlightCode = true, errorPosition = -1) {
-  if (!highlightCode && errorPosition < 0) { output.innerHTML = `<span class="plain-output">${escapeHtml(text)}</span>`; return; }
-  const lines = text.split('\n'); let offset = 0;
-  output.innerHTML = lines.map((line, index) => { const start = offset; offset += line.length + 1; const hasError = errorPosition >= start && errorPosition <= start + line.length; let code = highlightCode ? highlight(line) : escapeHtml(line); if (hasError) { const local = Math.max(0, Math.min(errorPosition - start, line.length)); const rawLine = line; const before = highlightCode ? highlight(rawLine.slice(0, local)) : escapeHtml(rawLine.slice(0, local)); const at = escapeHtml(rawLine.slice(local, local + 1) || ' '); const after = highlightCode ? highlight(rawLine.slice(local + 1)) : escapeHtml(rawLine.slice(local + 1)); code = `${before}<span class="error-char" data-error-char>${at}</span>${after}`; } return `<span class="code-line${hasError ? ' is-error' : ''}" data-line="${index + 1}"><span class="line-no">${index + 1}</span><span class="line-code">${code}</span></span>`; }).join('');
-  const marker = output.querySelector('[data-error-char]'); if (marker) setTimeout(() => marker.scrollIntoView({ block: 'center', inline: 'nearest' }), 0);
-}
-
-function renderIssues(issues) {
-  currentIssues = issues;
-  $('issues').hidden = !issues.length;
-  $('issueCount').textContent = issues.length ? `${issues.length} 项` : '';
-  $('issueList').innerHTML = issues.map((issue, index) => `<button class="issue-item ${issue.level === 'WARN' ? 'warn' : ''}" onclick="focusIssue(${index})"><span class="issue-icon">${issue.level === 'WARN' ? '⚠' : '×'}</span><span class="issue-main"><span class="issue-title">${escapeHtml(issue.title)} ${escapeHtml(issue.path || '')}</span><span class="issue-detail">${escapeHtml(issue.message)} · ${escapeHtml(issue.suggestion)}</span></span><span class="issue-pos">${issue.line ? `第${issue.line}行 第${issue.column}列` : ''}</span></button>`).join('');
-}
-
-function showBanner(issue) { $('errorBanner').hidden = !issue; if (!issue) { $('errorBanner').innerHTML = ''; return; } $('errorBanner').innerHTML = `<strong>JSON 错误 · ${escapeHtml(issue.title)}</strong><div>${escapeHtml(issue.reason)}</div><div class="meta">位置：${formatLocation(issue)}　路径：${escapeHtml(issue.path || '$')}<br>建议：${escapeHtml(issue.suggestion)}</div>`; }
-
-function hideFixPreview() { pendingFix = null; $('fixPreview').hidden = true; $('fixPreview').innerHTML = ''; }
-
-function showFixPreview(candidate) {
-  pendingFix = candidate;
-  const details = candidate.fixes.map(fix => `${escapeHtml(fix.label)}${fix.line ? `（第${fix.line}行）` : ''}`).join('、');
-  $('fixPreview').innerHTML = `<strong>发现 ${candidate.fixes.length} 处可修复问题</strong><div>${details}</div><div class="fix-note">已生成修复预览，输入内容尚未改变。应用后仍会再次严格校验。</div><div class="fix-actions"><button onclick="applyPendingFix()">应用修复</button><button class="ghost" onclick="cancelFixPreview()">取消</button></div>`;
-  $('fixPreview').hidden = false;
-}
-
-function normalizeSingleQuotedStrings(text) {
-  let result = '', converted = 0, inDouble = false, escaped = false;
-  const escapes = { n: '\n', r: '\r', t: '\t', b: '\b', f: '\f', v: '\v', '0': '\0' };
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inDouble) {
-      result += ch;
-      if (escaped) escaped = false;
-      else if (ch === '\\') escaped = true;
-      else if (ch === '"') inDouble = false;
-      continue;
-    }
-    if (ch === '"') { inDouble = true; result += ch; continue; }
-    if (ch !== "'") { result += ch; continue; }
-    let content = '', closed = false, j = i + 1;
-    for (; j < text.length; j++) {
-      const part = text[j];
-      if (part === "'") { closed = true; break; }
-      if (part === '\\' && j + 1 < text.length) {
-        const next = text[++j];
-        if (next === "'" || next === '"' || next === '\\' || next === '/') content += next;
-        else if (Object.prototype.hasOwnProperty.call(escapes, next)) content += escapes[next];
-        else content += '\\' + next;
-      } else content += part;
-    }
-    if (!closed) return { text, converted: 0, valid: false };
-    result += JSON.stringify(content); converted++; i = j;
-  }
-  return { text: result, converted, valid: true };
-}
-
-function process(action) {
-  const raw = input.value.trim(); $('inLen').textContent = input.value.length + ' chars'; $('fixBtn').disabled = !raw || !buildFixCandidate(input.value);
-  hideFixPreview();
-  if (!raw) { setStatus('', '等待输入'); output.innerHTML = ''; $('outLen').textContent = '0 chars'; showBanner(null); renderIssues([]); $('performanceNotice').hidden = true; lastOutputText = ''; return; }
-  const opts = getOpts(); let parsed, issues = [], result, parseError = null, compatibility = { converted: 0 };
-  try { parsed = JSON.parse(raw); }
-  catch (strictError) {
-    const normalized = normalizeSingleQuotedStrings(raw);
-    if (normalized.valid && normalized.converted > 0) {
-      try { parsed = JSON.parse(normalized.text); compatibility = normalized; }
-      catch (_) { parseError = strictError; }
-    } else parseError = strictError;
-  }
-  if (parseError) { const issue = analyzeParseError(parseError, raw); issues = [issue]; showBanner(issue); renderCode(raw, raw.length <= LARGE_JSON_LIMIT, issue.position); renderIssues(issues); $('performanceNotice').hidden = raw.length <= LARGE_JSON_LIMIT; $('outLen').textContent = raw.length + ' chars'; lastOutputText = raw; setStatus('err', 'JSON 无法解析', '', formatLocation(issue)); setTimeout(() => focusIssue(0), 20); return; }
-  showBanner(null); const nested = { count: 0 }; if (opts.unescape) parsed = deepParse(parsed, opts.depth, 0, '$', issues, nested, raw);
-  result = action === 'minify' ? JSON.stringify(parsed) : JSON.stringify(parsed, null, opts.indent); lastOutputText = result; $('outLen').textContent = result.length + ' chars'; const large = result.length > LARGE_JSON_LIMIT; $('performanceNotice').hidden = !large; renderCode(result, !large); renderIssues(issues);
-  const counts = `${compatibility.converted ? `兼容单引号 ${compatibility.converted} 处 · ` : ''}嵌套解析：成功 ${nested.count} · 异常 ${issues.length}${nested.count ? ' · 输出类型已转换' : ''}`;
-  const isWarning = issues.length > 0 || nested.count > 0 || compatibility.converted > 0;
-  const message = issues.length ? 'JSON 可解析，但存在嵌套异常' : (compatibility.converted ? '兼容解析成功，原文不是标准 JSON' : (nested.count ? 'JSON 校验通过，输出已展开嵌套字符串' : 'JSON 校验通过'));
-  setStatus(isWarning ? 'warn' : 'ok', message, counts);
-}
-
-function focusIssue(index) { const issue = currentIssues[index]; if (!issue) return; const leadingOffset = input.value.indexOf(input.value.trim()); const sourcePosition = Math.max(0, (leadingOffset < 0 ? 0 : leadingOffset) + issue.position); input.focus(); input.setSelectionRange(Math.min(sourcePosition, input.value.length), Math.min(sourcePosition + 1, input.value.length)); const lineHeight = typeof getComputedStyle === 'function' ? parseFloat(getComputedStyle(input).lineHeight) || 21 : 21; input.scrollTop = Math.max(0, (issue.line - 1) * lineHeight - input.clientHeight / 2); const line = output.querySelector(`[data-line="${issue.line}"]`); if (line) line.scrollIntoView({ block: 'center' }); }
-function format() { process('format'); }
-function minify() { process('minify'); }
-function copyOutput() { if (!lastOutputText) return; navigator.clipboard.writeText(lastOutputText).then(() => { const b = document.querySelector('.copy-btn'), t = b.textContent; b.textContent = '已复制'; setTimeout(() => b.textContent = t, 1200); }); }
-function clearAll() { input.value = ''; process('format'); input.focus(); }
-
-function removeTrailingCommas(text) { let result = '', fixes = [], inString = false, escaped = false; for (let i = 0; i < text.length; i++) { const ch = text[i]; if (inString) { result += ch; if (escaped) escaped = false; else if (ch === '\\') escaped = true; else if (ch === '"') inString = false; continue; } if (ch === '"') { inString = true; result += ch; continue; } if (ch === ',') { let next = i + 1; while (/\s/.test(text[next] || '')) next++; if (text[next] === '}' || text[next] === ']') { fixes.push({ type: 'trailing-comma', label: '删除尾逗号', ...indexToLocation(text, i) }); continue; } } result += ch; } return { text: result, fixes }; }
-
-function stripCodeFence(text) {
-  const match = text.match(/^\s*```(?:json|javascript|js)?\s*\n([\s\S]*?)\n```\s*$/i);
-  return match ? { text: match[1], fixes: [{ type: 'code-fence', label: '移除 Markdown 代码围栏' }] } : { text, fixes: [] };
-}
-
-function unwrapEscapedDocument(text) {
-  const trimmed = text.trim();
-  if (!/^[\[{]\\"/.test(trimmed)) return { text, fixes: [] };
-  const candidate = trimmed.replace(/\\"/g, '"').replace(/\\\\/g, '\\');
-  try { JSON.parse(candidate); return { text: candidate, fixes: [{ type: 'escaped-document', label: '解除整份 JSON 的多余转义' }] }; }
-  catch (_) { return { text, fixes: [] }; }
-}
-
-function buildFixCandidate(raw) {
-  let fixed = raw, fixes = [];
-  if (fixed.charCodeAt(0) === 0xFEFF) { fixed = fixed.slice(1); fixes.push({ type: 'bom', label: '移除文件头 BOM' }); }
-  const fenced = stripCodeFence(fixed); fixed = fenced.text; fixes.push(...fenced.fixes);
-  const unwrapped = unwrapEscapedDocument(fixed); fixed = unwrapped.text; fixes.push(...unwrapped.fixes);
-  const normalized = normalizeSingleQuotedStrings(fixed);
-  if (normalized.valid && normalized.converted > 0) { fixed = normalized.text; fixes.push({ type: 'single-quote', label: `将 ${normalized.converted} 处单引号字符串转换为双引号` }); }
-  const trailing = removeTrailingCommas(fixed); fixed = trailing.text; fixes.push(...trailing.fixes);
-  if (!fixes.length || fixed === raw) return null;
-  try { JSON.parse(fixed.trim()); return { text: fixed, fixes }; }
-  catch (_) { return null; }
-}
-
-function autoFix() {
-  const raw = input.value; if (!raw.trim()) return;
-  const candidate = buildFixCandidate(raw);
-  if (!candidate) { hideFixPreview(); setStatus('warn', '未找到可安全自动修复的问题', '缺逗号、缺引号等问题需要人工确认'); return; }
-  showFixPreview(candidate); renderCode(candidate.text, candidate.text.length <= LARGE_JSON_LIMIT); lastOutputText = candidate.text; $('outLen').textContent = candidate.text.length + ' chars'; setStatus('warn', '修复预览已生成', `预计修改 ${candidate.fixes.length} 处，尚未应用`);
-}
-
-function applyPendingFix() {
-  if (!pendingFix) return;
-  lastInputBeforeFix = input.value; input.value = pendingFix.text; $('undoBtn').disabled = false; hideFixPreview(); process('format');
-}
-
-function cancelFixPreview() { hideFixPreview(); process('format'); }
-function undoFix() { if (lastInputBeforeFix === null) return; input.value = lastInputBeforeFix; lastInputBeforeFix = null; $('undoBtn').disabled = true; process('format'); setStatus('warn', '已撤销上一次自动修复'); }
-
-function refreshFixAvailability() {
-  clearTimeout(fixAvailabilityTimer);
-  fixAvailabilityTimer = setTimeout(() => { $('fixBtn').disabled = !input.value.trim() || !buildFixCandidate(input.value); }, 180);
-}
-
-function handleTabKey(event) {
-  if (event.key !== 'Tab') return;
-  event.preventDefault();
-  const spaces = ' '.repeat(Math.max(1, getOpts().indent || 2));
-  const start = input.selectionStart, end = input.selectionEnd, value = input.value;
-  const lineStart = value.lastIndexOf('\n', start - 1) + 1;
-  if (start === end && !event.shiftKey) { input.setRangeText(spaces, start, end, 'end'); input.dispatchEvent(new Event('input')); return; }
-  const blockEnd = end > start && value[end - 1] === '\n' ? end - 1 : end;
-  const lineEnd = value.indexOf('\n', blockEnd);
-  const sliceEnd = lineEnd < 0 ? value.length : lineEnd;
-  const block = value.slice(lineStart, sliceEnd);
-  const lines = block.split('\n');
-  let removedBeforeStart = 0;
-  const changed = lines.map((line, index) => {
-    if (!event.shiftKey) return spaces + line;
-    const match = line.match(new RegExp(`^ {1,${spaces.length}}`));
-    const removed = match ? match[0].length : (line.startsWith('\t') ? 1 : 0);
-    if (index === 0) removedBeforeStart = removed;
-    return line.slice(removed);
-  }).join('\n');
-  input.setRangeText(changed, lineStart, sliceEnd, 'preserve');
-  const delta = changed.length - block.length;
-  input.setSelectionRange(Math.max(lineStart, start + (event.shiftKey ? -removedBeforeStart : spaces.length)), Math.max(lineStart, end + delta));
-  input.dispatchEvent(new Event('input'));
-}
-
-function loadSample() { input.value = `{
-  "device": "edge-07",
-  "config": "{\\"retry\\":3,\\"network\\":{\\"timeout\\":120}}",
-  "reportedAt": "2026-07-15T08:30:00Z"
-}`; process('format'); }
-input.addEventListener('input', () => { $('inLen').textContent = input.value.length + ' chars'; hideFixPreview(); refreshFixAvailability(); });
-input.addEventListener('paste', () => setTimeout(format, 0));
-input.addEventListener('keydown', e => { if (e.key === 'Tab') handleTabKey(e); else if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); format(); } });
-$('indent').addEventListener('input', format); $('depth').addEventListener('change', format); $('unescape').addEventListener('change', format);
-loadSample();
+  render();
 </script>
 </body>
 </html>

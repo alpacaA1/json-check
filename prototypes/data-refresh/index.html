@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数据刷新 - 页面复刻</title>
+  <style>
+    :root {
+      --bg: #e2e2e2;
+      --panel: #efefef;
+      --card: #f6f6f6;
+      --line: #d9d9d9;
+      --text: #2d2f33;
+      --muted: #5f6368;
+      --sidebar: #06243f;
+      --sidebar-muted: #8d98ac;
+      --orange: #f4a022;
+      --orange-deep: #ef8f00;
+      --green: #39d29a;
+      --red: #ff1f27;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      height: 100%;
+      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+      background: #cfd2d6;
+      color: var(--text);
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+      padding: 12px;
+    }
+
+    .tablet {
+      width: min(calc(100vw - 24px), calc((100vh - 24px) * 5 / 8));
+      aspect-ratio: 5 / 8;
+      border-radius: 36px;
+      background: #0f1724;
+      padding: 10px;
+      box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.35),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tablet::before {
+      content: "";
+      position: absolute;
+      width: 70px;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.3);
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 4;
+    }
+
+    .screen {
+      height: 100%;
+      background: var(--bg);
+      border-radius: 28px;
+      overflow: hidden;
+      display: flex;
+      position: relative;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 95px;
+      background: linear-gradient(180deg, #062743 0%, #031a32 100%);
+      color: var(--sidebar-muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 2;
+      padding-top: 16px;
+    }
+
+    .logo {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      margin-bottom: 14px;
+      overflow: hidden;
+      background: #0f2f52;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+    }
+
+    .logo svg {
+      width: 58px;
+      height: 58px;
+      display: block;
+    }
+
+    .nav-list {
+      width: 100%;
+      margin-top: 2px;
+    }
+
+    .nav-item {
+      height: 88px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 31px;
+      letter-spacing: 0.5px;
+      position: relative;
+      color: var(--sidebar-muted);
+    }
+
+    .nav-item .ico {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      border: 2px solid currentColor;
+      position: relative;
+      opacity: 0.95;
+    }
+
+    .nav-item:nth-child(1) .ico {
+      border-radius: 3px;
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      grid-template-rows: repeat(2, 1fr);
+      gap: 2px;
+      padding: 2px;
+    }
+
+    .nav-item:nth-child(1) .ico::before,
+    .nav-item:nth-child(1) .ico::after {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      border-radius: 2px;
+      border: 1px solid transparent;
+    }
+
+    .nav-item:nth-child(2) .ico::before,
+    .nav-item:nth-child(3) .ico::before,
+    .nav-item:nth-child(4) .ico::before,
+    .nav-item:nth-child(5) .ico::before,
+    .nav-item:nth-child(6) .ico::before,
+    .nav-item:nth-child(7) .ico::before,
+    .nav-item:nth-child(8) .ico::before {
+      content: "";
+      position: absolute;
+      left: 4px;
+      right: 4px;
+      top: 4px;
+      height: 2px;
+      background: currentColor;
+    }
+
+    .nav-item .txt {
+      font-size: 31px;
+      line-height: 1;
+      font-weight: 500;
+    }
+
+    .nav-item.active {
+      background: var(--orange);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .side-watermark {
+      position: absolute;
+      left: -7px;
+      top: 365px;
+      writing-mode: vertical-rl;
+      text-orientation: mixed;
+      letter-spacing: 2px;
+      font-size: 56px;
+      font-weight: 700;
+      color: rgba(125, 143, 167, 0.18);
+      user-select: none;
+      pointer-events: none;
+    }
+
+    .sidebar-bottom {
+      margin-top: auto;
+      width: 100%;
+      padding: 10px 8px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .small-app {
+      width: 68px;
+      height: 46px;
+      border-radius: 23px;
+      background: #f78c1d;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      position: relative;
+      font-weight: 700;
+    }
+
+    .small-app::after {
+      content: "";
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      right: 6px;
+      top: 2px;
+      border-radius: 50%;
+      background: #ff1f27;
+      box-shadow: 0 0 0 2px #fff;
+    }
+
+    .copyright {
+      font-size: 24px;
+      color: #8fa1b9;
+      width: 100%;
+      text-align: center;
+      letter-spacing: 1px;
+      margin-top: 2px;
+    }
+
+    .panic-btn {
+      width: 76px;
+      height: 92px;
+      border-radius: 14px;
+      border: 2px solid #ff1431;
+      color: #ff1431;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      font-size: 27px;
+      background: rgba(7, 36, 63, 0.45);
+    }
+
+    .panic-btn .dot {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      border: 3px solid currentColor;
+      display: inline-block;
+      position: relative;
+    }
+
+    .panic-btn .dot::after {
+      content: "";
+      position: absolute;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: currentColor;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    /* Main content */
+    .main {
+      flex: 1;
+      position: relative;
+      background: #dcdcdc;
+      padding: 18px 15px 120px;
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
+    }
+
+    .title {
+      font-size: 46px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+
+    .back {
+      border: 2px solid #5b5d60;
+      border-radius: 999px;
+      padding: 8px 20px;
+      font-size: 30px;
+      color: #3f4247;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .back .arrow {
+      display: inline-block;
+      width: 18px;
+      height: 18px;
+      border: 3px solid currentColor;
+      border-top-color: transparent;
+      border-right-color: transparent;
+      transform: rotate(45deg);
+      margin-left: 3px;
+      border-radius: 2px;
+    }
+
+    .sub {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      font-size: 38px;
+      font-weight: 700;
+      line-height: 1.1;
+    }
+
+    .sub .time {
+      font-size: 37px;
+      color: #3c3d42;
+      font-weight: 500;
+      letter-spacing: 0.2px;
+    }
+
+    .card {
+      background: var(--panel);
+      border-radius: 12px;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+      margin-bottom: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.03);
+      position: relative;
+    }
+
+    .store-card {
+      padding: 12px 16px 11px;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .row + .row {
+      margin-top: 8px;
+    }
+
+    .store-name {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 35px;
+      font-weight: 700;
+      color: #33363d;
+    }
+
+    .mini-icon {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      background: #626a7a;
+      position: relative;
+      flex: none;
+    }
+
+    .mini-icon::before {
+      content: "";
+      position: absolute;
+      left: 6px;
+      top: 5px;
+      width: 10px;
+      height: 10px;
+      border-radius: 2px;
+      border: 2px solid #fff;
+    }
+
+    .ok-tiny {
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: var(--green);
+      position: relative;
+      flex: none;
+      margin-right: 4px;
+    }
+
+    .ok-tiny::after {
+      content: "";
+      position: absolute;
+      left: 7px;
+      top: 5px;
+      width: 8px;
+      height: 13px;
+      border: 3px solid #fff;
+      border-top: 0;
+      border-left: 0;
+      transform: rotate(45deg);
+    }
+
+    .date-tag {
+      border: 1px solid var(--orange-deep);
+      color: var(--orange-deep);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 25px;
+      line-height: 1;
+      margin-left: 8px;
+      white-space: nowrap;
+    }
+
+    .muted-row {
+      color: #474b53;
+      font-size: 27px;
+      justify-content: flex-start;
+      gap: 8px;
+    }
+
+    .muted-row .mini-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      background: #6d7483;
+    }
+
+    .muted-row .mini-icon::before {
+      left: 5px;
+      top: 4px;
+      width: 8px;
+      height: 8px;
+      border-width: 2px;
+    }
+
+    .refresh-card {
+      margin: 0 15px 10px;
+      padding: 14px 16px 16px;
+      border-radius: 14px;
+      background: #ececec;
+      box-shadow: 0 2px 7px rgba(0, 0, 0, 0.04);
+    }
+
+    .refresh-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .refresh-title {
+      font-size: 40px;
+      font-weight: 700;
+    }
+
+    .upload {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid #4f5257;
+      border-radius: 999px;
+      padding: 6px 16px;
+      font-size: 28px;
+      color: #3d4045;
+      background: #ececec;
+    }
+
+    .upload .up {
+      width: 14px;
+      height: 14px;
+      border-left: 2px solid currentColor;
+      border-top: 2px solid currentColor;
+      transform: rotate(45deg);
+      position: relative;
+      margin-right: 2px;
+    }
+
+    .upload .up::after {
+      content: "";
+      position: absolute;
+      width: 2px;
+      height: 12px;
+      background: currentColor;
+      left: -1px;
+      top: 8px;
+      transform: rotate(-45deg);
+    }
+
+    .progress-track {
+      height: 20px;
+      border-radius: 999px;
+      background: #f4f4f4;
+      margin-bottom: 12px;
+      overflow: hidden;
+    }
+
+    .progress-value {
+      width: 70%;
+      height: 100%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, #f4a022, #eb8d0d);
+    }
+
+    .refresh-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 39px;
+    }
+
+    .left-stat {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .left-stat .alert-dot {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--red);
+      position: relative;
+      display: inline-block;
+      flex: none;
+    }
+
+    .left-stat .alert-dot::after {
+      content: "!";
+      position: absolute;
+      color: #fff;
+      font-weight: 700;
+      font-size: 20px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -55%);
+    }
+
+    .left-stat .num {
+      font-size: 40px;
+      font-weight: 500;
+      margin-left: 8px;
+    }
+
+    .failed {
+      color: var(--red);
+      font-weight: 500;
+    }
+
+    .status-card {
+      padding: 0 15px;
+      background: #efefef;
+      border-radius: 12px;
+      margin-bottom: 10px;
+      border: 1px solid rgba(0, 0, 0, 0.03);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .status-head {
+      height: 68px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 43px;
+      font-weight: 700;
+      border-bottom: 1px solid #d7d7d7;
+    }
+
+    .status-head.no-border {
+      border-bottom: 0;
+    }
+
+    .success {
+      color: #3d4045;
+      font-size: 40px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-ok {
+      width: 31px;
+      height: 31px;
+      border-radius: 50%;
+      background: var(--green);
+      position: relative;
+      flex: none;
+    }
+
+    .badge-ok::after {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 6px;
+      width: 10px;
+      height: 15px;
+      border: 3px solid #fff;
+      border-top: 0;
+      border-left: 0;
+      transform: rotate(45deg);
+    }
+
+    .badge-fail {
+      width: 31px;
+      height: 31px;
+      border-radius: 50%;
+      background: var(--red);
+      position: relative;
+      flex: none;
+    }
+
+    .badge-fail::before,
+    .badge-fail::after {
+      content: "";
+      position: absolute;
+      top: 14px;
+      left: 7px;
+      width: 17px;
+      height: 3px;
+      background: #fff;
+      border-radius: 2px;
+    }
+
+    .badge-fail::before {
+      transform: rotate(45deg);
+    }
+
+    .badge-fail::after {
+      transform: rotate(-45deg);
+    }
+
+    .item {
+      padding: 9px 0 8px;
+      position: relative;
+    }
+
+    .item + .item {
+      border-top: 1px solid #d9d9d9;
+    }
+
+    .item-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 38px;
+      color: #35383e;
+    }
+
+    .item-title .badge-fail {
+      width: 20px;
+      height: 20px;
+    }
+
+    .item-title .badge-fail::before,
+    .item-title .badge-fail::after {
+      top: 9px;
+      left: 4px;
+      width: 12px;
+      height: 2px;
+    }
+
+    .reason {
+      margin-left: 30px;
+      color: var(--red);
+      font-size: 31px;
+      margin-top: 6px;
+      line-height: 1.2;
+    }
+
+    .retry {
+      position: absolute;
+      right: 2px;
+      top: 12px;
+      border: 1px solid var(--orange-deep);
+      border-radius: 999px;
+      padding: 7px 18px;
+      color: var(--orange-deep);
+      font-size: 28px;
+      background: #f7f2eb;
+      line-height: 1;
+    }
+
+    .loading {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #777b83;
+      font-size: 39px;
+      font-weight: 500;
+    }
+
+    .spinner {
+      width: 23px;
+      height: 23px;
+      border-radius: 50%;
+      border: 3px solid #c6c9ce;
+      border-top-color: #8a9099;
+    }
+
+    .caret {
+      width: 16px;
+      height: 16px;
+      border-right: 4px solid #2f3338;
+      border-bottom: 4px solid #2f3338;
+      transform: rotate(45deg) translateY(-2px);
+      margin-left: 8px;
+    }
+
+    .fake-scroll {
+      position: absolute;
+      right: 5px;
+      width: 8px;
+      border-radius: 8px;
+      background: #4b5160;
+      opacity: 0.9;
+    }
+
+    .scroll-a {
+      height: 120px;
+      top: 122px;
+    }
+
+    .scroll-b {
+      height: 63px;
+      top: 202px;
+    }
+
+    .bottom-action {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 28px;
+      width: 73%;
+      height: 64px;
+      border-radius: 999px;
+      background: var(--orange);
+      color: #fff;
+      font-size: 36px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.08);
+      letter-spacing: 0.5px;
+    }
+
+    .reload {
+      width: 23px;
+      height: 23px;
+      border: 4px solid #fff;
+      border-right-color: transparent;
+      border-radius: 50%;
+      position: relative;
+    }
+
+    .reload::after {
+      content: "";
+      position: absolute;
+      right: -6px;
+      top: 5px;
+      border-left: 8px solid #fff;
+      border-top: 5px solid transparent;
+      border-bottom: 5px solid transparent;
+      transform: rotate(-12deg);
+    }
+
+    .subtle {
+      color: #41444a;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="tablet">
+    <div class="screen">
+      <aside class="sidebar">
+        <div class="logo" aria-hidden="true">
+          <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#ff8d23" />
+                <stop offset="1" stop-color="#ef6c00" />
+              </linearGradient>
+              <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#3fd4a0" />
+                <stop offset="1" stop-color="#1a8c65" />
+              </linearGradient>
+            </defs>
+            <circle cx="50" cy="50" r="48" fill="#0f2f52" />
+            <path d="M10,55 C32,31 63,31 88,54" stroke="url(#g1)" stroke-width="11" fill="none" stroke-linecap="round" />
+            <path d="M10,68 C34,43 60,41 83,61" stroke="#fff" stroke-width="7" fill="none" stroke-linecap="round" />
+            <path d="M14,78 C35,59 56,56 74,71" stroke="#fff" stroke-width="5" fill="none" stroke-linecap="round" />
+            <path d="M65,14 C86,24 95,49 86,71 C81,84 72,90 57,94" fill="none" stroke="url(#g2)" stroke-width="10" stroke-linecap="round" />
+            <path d="M18,82 C34,92 48,94 61,92" fill="none" stroke="url(#g2)" stroke-width="10" stroke-linecap="round" />
+          </svg>
+        </div>
+
+        <div class="nav-list">
+          <div class="nav-item"><span class="ico"></span><span class="txt">概况</span></div>
+          <div class="nav-item"><span class="ico"></span><span class="txt">订单</span></div>
+          <div class="nav-item"><span class="ico"></span><span class="txt">料仓</span></div>
+          <div class="nav-item"><span class="ico"></span><span class="txt">成品</span></div>
+          <div class="nav-item"><span class="ico"></span><span class="txt">单品</span></div>
+          <div class="nav-item"><span class="ico"></span><span class="txt">清洗</span></div>
+          <div class="nav-item active"><span class="ico"></span><span class="txt">其他功能</span></div>
+          <div class="nav-item"><span class="ico"></span><span class="txt">数据看板</span></div>
+        </div>
+
+        <div class="side-watermark">TODAVIA</div>
+
+        <div class="sidebar-bottom">
+          <div class="small-app">99+</div>
+          <div class="copyright">© TEDIA</div>
+          <div class="panic-btn">
+            <span class="dot"></span>
+            <span>紧急停止</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <div class="header">
+          <div class="title">其他功能</div>
+          <div class="back"><span class="arrow"></span>返回</div>
+        </div>
+
+        <div class="sub">
+          <div>数据刷新</div>
+          <div class="time">上次刷新时间：2025/8/22 12:03:24</div>
+        </div>
+
+        <section class="card store-card">
+          <div class="row">
+            <div class="store-name">
+              <span class="mini-icon"></span>
+              <span>0012-苏州慧湖大厦店B1-1</span>
+            </div>
+            <div style="display:flex;align-items:center;">
+              <span class="ok-tiny"></span>
+              <span class="date-tag">V2025.08.22.01</span>
+            </div>
+          </div>
+          <div class="row muted-row">
+            <span class="mini-icon"></span>
+            <span>000001</span>
+            <span class="mini-icon"></span>
+            <span>123456</span>
+            <span class="mini-icon"></span>
+            <span>73916be5dba04dfc9dcca4bdb1f1e9be</span>
+          </div>
+        </section>
+
+        <section class="refresh-card">
+          <div class="refresh-top">
+            <div class="refresh-title">刷新结果</div>
+            <div class="upload"><span class="up"></span>上传日志</div>
+          </div>
+          <div class="progress-track">
+            <div class="progress-value"></div>
+          </div>
+          <div class="refresh-foot">
+            <div class="left-stat">
+              <span class="alert-dot"></span>
+              <span><strong>部分刷新完成：</strong> <span class="num">86.7%</span></span>
+            </div>
+            <div class="failed">失败：3</div>
+          </div>
+        </section>
+
+        <section class="status-card">
+          <div class="status-head no-border">
+            <div>获取前置数据</div>
+            <div class="success"><span class="badge-ok"></span>获取成功</div>
+          </div>
+        </section>
+
+        <section class="status-card">
+          <div class="status-head">
+            <div>获取生产数据</div>
+            <div class="success" style="color:var(--red)"><span class="badge-fail"></span>部分数据获取失败</div>
+          </div>
+          <div class="item">
+            <div class="item-title"><span class="badge-fail"></span>获取云端规格互斥数据</div>
+            <div class="reason">失败原因：数据校验错误：云端数据格式不匹配</div>
+            <div class="retry">重试</div>
+          </div>
+          <span class="fake-scroll scroll-a"></span>
+        </section>
+
+        <section class="status-card">
+          <div class="status-head">
+            <div>获取食安数据</div>
+            <div class="loading"><span class="spinner"></span>正在获取云端公告数据 <span class="caret"></span></div>
+          </div>
+
+          <div class="item">
+            <div class="item-title"><span class="badge-fail"></span>获取云端规格互斥数据</div>
+            <div class="reason">失败原因：数据校验错误：云端数据格式不匹配</div>
+            <div class="retry">重试</div>
+          </div>
+
+          <div class="item">
+            <div class="item-title"><span class="badge-fail"></span>获取云端营业准备数据</div>
+            <div class="reason">失败原因：未找到请求的资源（404）</div>
+            <div class="retry">重试</div>
+          </div>
+          <span class="fake-scroll scroll-b"></span>
+        </section>
+
+        <section class="status-card">
+          <div class="status-head no-border">
+            <div>获取其他数据</div>
+            <div class="success"><span class="badge-ok"></span>获取成功</div>
+          </div>
+        </section>
+
+        <div class="bottom-action"><span class="reload"></span>一键重试失败项</div>
+      </main>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,748 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>3D 块状热区测试</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --bg: #101418;
+        --panel: #171d22;
+        --panel-2: #20282f;
+        --line: #35424c;
+        --text: #eaf1f5;
+        --muted: #9badb8;
+        --accent: #28d6b4;
+        --accent-2: #f5b84b;
+        --danger: #ef6b5d;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        overflow: hidden;
+        background:
+          radial-gradient(circle at 28% 18%, rgba(40, 214, 180, 0.18), transparent 28%),
+          linear-gradient(140deg, #0d1115 0%, #141a1f 54%, #0e1317 100%);
+        color: var(--text);
+        font-family: "DIN Alternate", "Avenir Next", "PingFang SC", sans-serif;
+      }
+
+      .app {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 360px;
+        height: 100vh;
+      }
+
+      .stage {
+        position: relative;
+        display: grid;
+        place-items: center;
+        min-width: 0;
+        padding: 42px;
+      }
+
+      .scene {
+        position: relative;
+        width: min(78vw, 920px);
+        height: min(72vh, 660px);
+        min-height: 460px;
+        perspective: 1200px;
+        user-select: none;
+      }
+
+      .hotspot-layer {
+        position: absolute;
+        inset: 0;
+        z-index: 4;
+      }
+
+      .hotspot-layer svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        pointer-events: none;
+      }
+
+      .leader {
+        fill: none;
+        stroke: rgba(40, 214, 180, 0.68);
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        filter: drop-shadow(0 0 7px rgba(40, 214, 180, 0.25));
+        pointer-events: auto;
+        cursor: pointer;
+        transition: stroke 160ms ease, stroke-width 160ms ease, opacity 160ms ease;
+      }
+
+      .leader-hit {
+        fill: none;
+        stroke: transparent;
+        stroke-width: 18;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        pointer-events: auto;
+        cursor: pointer;
+      }
+
+      .leader.active,
+      .leader:hover {
+        stroke: var(--accent-2);
+        stroke-width: 3;
+      }
+
+      .orbit {
+        position: absolute;
+        inset: 0;
+        transform-style: preserve-3d;
+        animation: drift 12s ease-in-out infinite alternate;
+      }
+
+      .floor {
+        position: absolute;
+        left: 16%;
+        right: 12%;
+        bottom: 11%;
+        height: 32%;
+        border: 1px solid rgba(155, 173, 184, 0.16);
+        background:
+          linear-gradient(rgba(53, 66, 76, 0.35) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(53, 66, 76, 0.35) 1px, transparent 1px);
+        background-size: 38px 38px;
+        transform: rotateX(72deg) rotateZ(-8deg);
+        filter: blur(0.1px);
+        opacity: 0.64;
+        pointer-events: none;
+      }
+
+      .device {
+        position: absolute;
+        left: 21%;
+        top: 22%;
+        width: 470px;
+        height: 300px;
+        transform: rotateX(58deg) rotateZ(-24deg);
+        transform-style: preserve-3d;
+      }
+
+      .face,
+      .slot,
+      .screen,
+      .antenna {
+        pointer-events: none;
+      }
+
+      .cube {
+        position: absolute;
+        transform-style: preserve-3d;
+      }
+
+      .body {
+        left: 42px;
+        top: 58px;
+        width: 360px;
+        height: 170px;
+        transform: translateZ(0);
+      }
+
+      .face {
+        position: absolute;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: linear-gradient(135deg, #364650, #1f2a31);
+        box-shadow: inset 0 0 36px rgba(255, 255, 255, 0.04);
+      }
+
+      .body .front {
+        inset: 0;
+        transform: translateZ(72px);
+      }
+
+      .body .back {
+        inset: 0;
+        transform: translateZ(-72px);
+      }
+
+      .body .top {
+        left: 0;
+        top: -72px;
+        width: 360px;
+        height: 144px;
+        transform: rotateX(90deg);
+        background: linear-gradient(135deg, #455762, #27343c);
+      }
+
+      .body .right {
+        right: -72px;
+        top: 0;
+        width: 144px;
+        height: 170px;
+        transform: rotateY(90deg);
+        background: linear-gradient(135deg, #27343c, #182126);
+      }
+
+      .body .left {
+        left: -72px;
+        top: 0;
+        width: 144px;
+        height: 170px;
+        transform: rotateY(90deg);
+        background: linear-gradient(135deg, #2e3c45, #1b242a);
+      }
+
+      .slot {
+        position: absolute;
+        left: 78px;
+        top: 88px;
+        width: 86px;
+        height: 18px;
+        border-radius: 2px;
+        background: #0a0d10;
+        transform: translateZ(76px);
+        box-shadow: 132px 0 0 #0a0d10, 0 38px 0 #0a0d10, 132px 38px 0 #0a0d10;
+      }
+
+      .screen {
+        position: absolute;
+        left: 248px;
+        top: 78px;
+        width: 100px;
+        height: 60px;
+        border: 2px solid rgba(40, 214, 180, 0.34);
+        border-radius: 4px;
+        background: linear-gradient(135deg, rgba(40, 214, 180, 0.22), rgba(8, 12, 15, 0.9));
+        transform: translateZ(78px);
+        box-shadow: 0 0 24px rgba(40, 214, 180, 0.2);
+      }
+
+      .antenna {
+        position: absolute;
+        left: 82px;
+        top: 22px;
+        width: 22px;
+        height: 124px;
+        border-radius: 3px;
+        background: linear-gradient(#7f919a, #27343c);
+        transform: translateZ(90px) rotateZ(4deg);
+        transform-origin: bottom center;
+      }
+
+      .antenna::before {
+        content: "";
+        position: absolute;
+        left: -11px;
+        top: -16px;
+        width: 44px;
+        height: 20px;
+        border-radius: 50%;
+        background: #95a6af;
+        box-shadow: 0 0 22px rgba(40, 214, 180, 0.18);
+      }
+
+      .hotspot {
+        position: absolute;
+        border: 1px solid rgba(40, 214, 180, 0.72);
+        background: rgba(40, 214, 180, 0.18);
+        box-shadow: 0 0 0 1px rgba(40, 214, 180, 0.12), 0 14px 34px rgba(40, 214, 180, 0.18);
+        cursor: pointer;
+        pointer-events: auto;
+        transition:
+          background 160ms ease,
+          border-color 160ms ease,
+          box-shadow 160ms ease,
+          opacity 160ms ease;
+      }
+
+      .hotspot::after {
+        content: attr(data-short);
+        position: absolute;
+        left: 50%;
+        top: -30px;
+        transform: translateX(-50%);
+        padding: 4px 8px;
+        border-radius: 3px;
+        background: rgba(16, 20, 24, 0.88);
+        color: var(--text);
+        font-size: 12px;
+        white-space: nowrap;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 160ms ease;
+      }
+
+      .hotspot:hover,
+      .hotspot.active {
+        border-color: var(--accent-2);
+        background: rgba(245, 184, 75, 0.24);
+        box-shadow: 0 0 0 1px rgba(245, 184, 75, 0.28), 0 18px 44px rgba(245, 184, 75, 0.28);
+      }
+
+      .hotspot:hover::after,
+      .hotspot.active::after {
+        opacity: 1;
+      }
+
+      .hotspot.processor {
+        left: 55.4%;
+        top: 38.2%;
+        width: 104px;
+        height: 58px;
+        transform: rotate(-14deg) skewX(-12deg);
+      }
+
+      .hotspot.io {
+        left: 36%;
+        top: 42.8%;
+        width: 176px;
+        height: 84px;
+        transform: rotate(-14deg) skewX(-12deg);
+      }
+
+      .hotspot.power {
+        left: 67.2%;
+        top: 42.8%;
+        width: 70px;
+        height: 108px;
+        transform: rotate(10deg) skewY(-18deg);
+      }
+
+      .hotspot.antenna-zone {
+        left: 30.4%;
+        top: 20.4%;
+        width: 58px;
+        height: 150px;
+        transform: rotate(-10deg) skewX(-6deg);
+      }
+
+      .callout {
+        position: absolute;
+        min-width: 112px;
+        border: 1px solid rgba(40, 214, 180, 0.6);
+        border-radius: 6px;
+        background: rgba(16, 20, 24, 0.86);
+        color: var(--text);
+        padding: 9px 11px 10px;
+        text-align: left;
+        cursor: pointer;
+        pointer-events: auto;
+        box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
+        transition: border-color 160ms ease, background 160ms ease, transform 160ms ease;
+      }
+
+      .callout strong {
+        display: block;
+        font-size: 13px;
+        font-weight: 700;
+        line-height: 1.2;
+      }
+
+      .callout span {
+        display: block;
+        margin-top: 4px;
+        color: var(--muted);
+        font-size: 11px;
+        line-height: 1.2;
+      }
+
+      .callout:hover,
+      .callout.active {
+        border-color: var(--accent-2);
+        background: rgba(36, 31, 21, 0.92);
+        transform: translateY(-2px);
+      }
+
+      .callout.processor-label {
+        left: 74%;
+        top: 25%;
+      }
+
+      .callout.io-label {
+        left: 11%;
+        top: 55%;
+      }
+
+      .callout.power-label {
+        left: 78%;
+        top: 56%;
+      }
+
+      .callout.antenna-label {
+        left: 12%;
+        top: 18%;
+      }
+
+      .hint {
+        position: absolute;
+        left: 42px;
+        top: 34px;
+        max-width: 420px;
+      }
+
+      .hint h1 {
+        margin: 0 0 12px;
+        font-size: 28px;
+        font-weight: 700;
+        letter-spacing: 0;
+      }
+
+      .hint p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+        font-size: 14px;
+      }
+
+      .side {
+        border-left: 1px solid rgba(255, 255, 255, 0.08);
+        background: rgba(23, 29, 34, 0.92);
+        backdrop-filter: blur(16px);
+        padding: 28px;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .side-header {
+        padding-bottom: 18px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .side-header span {
+        display: block;
+        color: var(--accent);
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+
+      .side-header h2 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: 0;
+      }
+
+      .detail {
+        min-height: 190px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(32, 40, 47, 0.88), rgba(18, 24, 29, 0.88));
+        border-radius: 8px;
+        padding: 20px;
+      }
+
+      .detail-title {
+        margin: 0 0 12px;
+        color: var(--text);
+        font-size: 18px;
+      }
+
+      .detail-text {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.8;
+        font-size: 14px;
+      }
+
+      .meta-list {
+        display: grid;
+        gap: 10px;
+        margin-top: 18px;
+      }
+
+      .meta-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 0;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .meta-row strong {
+        color: var(--text);
+        font-weight: 600;
+      }
+
+      .zone-list {
+        display: grid;
+        gap: 10px;
+      }
+
+      .zone-button {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 6px;
+        background: var(--panel-2);
+        color: var(--text);
+        cursor: pointer;
+        padding: 12px 14px;
+        text-align: left;
+        font: inherit;
+        transition: border-color 160ms ease, background 160ms ease;
+      }
+
+      .zone-button:hover,
+      .zone-button.active {
+        border-color: var(--accent-2);
+        background: rgba(245, 184, 75, 0.1);
+      }
+
+      .status {
+        margin-top: auto;
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.7;
+      }
+
+      .status b {
+        color: var(--accent);
+        font-weight: 600;
+      }
+
+      @keyframes drift {
+        from {
+          transform: translateY(0) rotateZ(0deg);
+        }
+
+        to {
+          transform: translateY(10px) rotateZ(1.2deg);
+        }
+      }
+
+      @media (max-width: 860px) {
+        body {
+          overflow: auto;
+        }
+
+        .app {
+          grid-template-columns: 1fr;
+          height: auto;
+          min-height: 100vh;
+        }
+
+        .stage {
+          min-height: 560px;
+          padding: 26px;
+        }
+
+        .scene {
+          width: 100%;
+          min-height: 420px;
+        }
+
+        .device {
+          left: 8%;
+          transform: scale(0.82) rotateX(58deg) rotateZ(-24deg);
+          transform-origin: left top;
+        }
+
+        .side {
+          border-left: 0;
+          border-top: 1px solid rgba(255, 255, 255, 0.08);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="app">
+      <section class="stage" aria-label="3D 设备块状热区测试">
+        <div class="hint">
+          <h1>3D 模型块状热区测试</h1>
+          <p>块贴合设备部件，引线延伸到模型外侧。点击块、引线或外侧标签后，右侧展示对应说明。</p>
+        </div>
+
+        <div class="scene" id="scene">
+          <div class="orbit">
+            <div class="floor"></div>
+            <div class="device" aria-label="IoT 网关模型">
+              <div class="cube body">
+                <div class="face front"></div>
+                <div class="face back"></div>
+                <div class="face top"></div>
+                <div class="face right"></div>
+                <div class="face left"></div>
+              </div>
+              <div class="slot"></div>
+              <div class="screen"></div>
+              <div class="antenna"></div>
+            </div>
+          </div>
+          <div class="hotspot-layer" aria-label="模型块状热区">
+            <svg viewBox="0 0 1000 700" preserveAspectRatio="none" aria-hidden="true">
+              <path class="leader-hit" data-zone="processor" d="M 652 284 L 724 232 L 805 218" />
+              <path class="leader" data-zone="processor" d="M 652 284 L 724 232 L 805 218" />
+
+              <path class="leader-hit" data-zone="io" d="M 420 368 L 292 432 L 173 455" />
+              <path class="leader" data-zone="io" d="M 420 368 L 292 432 L 173 455" />
+
+              <path class="leader-hit" data-zone="power" d="M 714 394 L 804 428 L 842 500" />
+              <path class="leader" data-zone="power" d="M 714 394 L 804 428 L 842 500" />
+
+              <path class="leader-hit" data-zone="antenna" d="M 352 202 L 256 166 L 172 164" />
+              <path class="leader" data-zone="antenna" d="M 352 202 L 256 166 L 172 164" />
+            </svg>
+            <button class="hotspot processor" data-zone="processor" data-short="主控区域" aria-label="查看主控区域"></button>
+            <button class="hotspot io" data-zone="io" data-short="接口区域" aria-label="查看接口区域"></button>
+            <button class="hotspot power" data-zone="power" data-short="供电区域" aria-label="查看供电区域"></button>
+            <button class="hotspot antenna-zone" data-zone="antenna" data-short="天线区域" aria-label="查看天线区域"></button>
+            <button class="callout processor-label" data-zone="processor" type="button">
+              <strong>主控区域</strong>
+              <span>CPU / 固件状态</span>
+            </button>
+            <button class="callout io-label" data-zone="io" type="button">
+              <strong>接口区域</strong>
+              <span>网口 / 串口 / DI</span>
+            </button>
+            <button class="callout power-label" data-zone="power" type="button">
+              <strong>供电区域</strong>
+              <span>24V 输入 / 保护</span>
+            </button>
+            <button class="callout antenna-label" data-zone="antenna" type="button">
+              <strong>天线区域</strong>
+              <span>无线 / 信号强度</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="side" aria-label="热区说明">
+        <div class="side-header">
+          <span>BLOCK HOTSPOT</span>
+          <h2>点击块显示文字</h2>
+        </div>
+
+        <section class="detail" id="detail">
+          <h3 class="detail-title" id="detailTitle">未选择区域</h3>
+          <p class="detail-text" id="detailText">请选择模型上的半透明块，查看该部件说明。这个测试用于确认“点”替换为“块”的视觉和交互是否可接受。</p>
+          <div class="meta-list" id="metaList"></div>
+        </section>
+
+        <div class="zone-list" id="zoneList" aria-label="区域快捷选择"></div>
+
+        <p class="status">
+          当前方案：<b>块状热区 + 引线标注</b><br />
+          块、引线、外侧标签共享选中态；后续可迁移到真实 Three.js/R3F 模型。
+        </p>
+      </aside>
+    </main>
+
+    <script>
+      const zones = {
+        processor: {
+          name: "主控区域",
+          text: "展示 CPU、存储、运行状态等核心信息。点击块后可以承载设备型号、固件版本、在线状态和异常提示。",
+          meta: [
+            ["状态", "正常"],
+            ["建议承载", "主控/固件/运行状态"],
+            ["视觉", "选中后琥珀色高亮"],
+          ],
+        },
+        io: {
+          name: "接口区域",
+          text: "用于标注网口、串口、DI/DO 等接线区域。块比点更适合表达接口组，不需要给每个端口都放一个点。",
+          meta: [
+            ["状态", "4 个端口在线"],
+            ["建议承载", "端口、协议、连接状态"],
+            ["视觉", "覆盖整个接口组"],
+          ],
+        },
+        power: {
+          name: "供电区域",
+          text: "用于说明电源输入、保险保护、电压范围等信息。放在侧面时需要注意块的可点击面积，避免旋转后难以命中。",
+          meta: [
+            ["状态", "24V 输入"],
+            ["建议承载", "电压、功耗、告警"],
+            ["视觉", "侧面块状热区"],
+          ],
+        },
+        antenna: {
+          name: "天线区域",
+          text: "用于说明无线连接、信号强度、通信模式。细长部件适合用包围块，不建议继续用小点，否则点击目标太小。",
+          meta: [
+            ["状态", "信号良好"],
+            ["建议承载", "无线、信号、协议"],
+            ["视觉", "包围式热区"],
+          ],
+        },
+      };
+
+      const detailTitle = document.querySelector("#detailTitle");
+      const detailText = document.querySelector("#detailText");
+      const metaList = document.querySelector("#metaList");
+      const hotspotEls = [...document.querySelectorAll(".hotspot")];
+      const leaderEls = [...document.querySelectorAll(".leader")];
+      const calloutEls = [...document.querySelectorAll(".callout")];
+      const zoneList = document.querySelector("#zoneList");
+      let activeZone = "";
+
+      function renderZoneButtons() {
+        zoneList.innerHTML = Object.entries(zones)
+          .map(([key, zone]) => `<button class="zone-button" data-zone="${key}" type="button">${zone.name}</button>`)
+          .join("");
+      }
+
+      function selectZone(zoneKey) {
+        activeZone = zoneKey;
+        const zone = zones[zoneKey];
+
+        hotspotEls.forEach((el) => el.classList.toggle("active", el.dataset.zone === zoneKey));
+        leaderEls.forEach((el) => el.classList.toggle("active", el.dataset.zone === zoneKey));
+        calloutEls.forEach((el) => el.classList.toggle("active", el.dataset.zone === zoneKey));
+        document.querySelectorAll(".zone-button").forEach((el) => {
+          el.classList.toggle("active", el.dataset.zone === zoneKey);
+        });
+
+        if (!zone) {
+          detailTitle.textContent = "未选择区域";
+          detailText.textContent = "请选择模型上的半透明块，查看该部件说明。这个测试用于确认“点”替换为“块”的视觉和交互是否可接受。";
+          metaList.innerHTML = "";
+          return;
+        }
+
+        detailTitle.textContent = zone.name;
+        detailText.textContent = zone.text;
+        metaList.innerHTML = zone.meta
+          .map(([label, value]) => `<div class="meta-row"><span>${label}</span><strong>${value}</strong></div>`)
+          .join("");
+      }
+
+      renderZoneButtons();
+
+      document.querySelectorAll("[data-zone]").forEach((el) => {
+        el.addEventListener("click", (event) => {
+          event.stopPropagation();
+          selectZone(el.dataset.zone);
+        });
+      });
+
+      document.querySelectorAll(".leader-hit").forEach((el) => {
+        el.addEventListener("mouseenter", () => {
+          document.querySelector(`.leader[data-zone="${el.dataset.zone}"]`)?.classList.add("active");
+        });
+        el.addEventListener("mouseleave", () => {
+          if (activeZone !== el.dataset.zone) {
+            document.querySelector(`.leader[data-zone="${el.dataset.zone}"]`)?.classList.remove("active");
+          }
+        });
+      });
+
+      document.addEventListener("click", (event) => {
+        const target = event.target.closest("[data-zone]");
+        if (target) {
+          selectZone(target.dataset.zone);
+          return;
+        }
+
+        if (activeZone) {
+          selectZone("");
+        }
+      });
+    </script>
+  </body>
+</html>

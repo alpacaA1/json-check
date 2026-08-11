@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Skills Local Manager</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg-page:      #F2F0EA;
+        --bg-panel:     #FAF9F5;
+        --bg-hover:     #EAE7DF;
+        --bg-selected:  #DDD9CF;
+        --text-primary:   #171714;
+        --text-secondary: #66645E;
+        --text-muted:     #929087;
+        --divider:        #D5D2C9;
+        --accent:         #D94A2B;
+        --error:          #B42318;
+        --success:        #3F6B4C;
+      }
+      body {
+        font-family: 'Inter', 'Noto Sans SC', system-ui, -apple-system, sans-serif;
+        background-color: var(--bg-page);
+        color: var(--text-primary);
+      }
+      .font-mono {
+        font-family: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+      }
+      .transition-colors {
+        transition: background-color 120ms ease, border-color 120ms ease, color 120ms ease;
+      }
+      .fade-in {
+        animation: fadeIn 150ms ease;
+      }
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        * { transition: none !important; animation: none !important; }
+      }
+    </style>
+  </head>
+  <body class="h-screen flex flex-col overflow-hidden bg-[#F2F0EA] text-[#171714]">
+    <!-- 顶部工具栏 -->
+    <header class="h-16 shrink-0 border-b border-[#D5D2C9] flex items-center justify-between px-6 bg-[#FAF9F5]">
+      <div class="flex items-center gap-4">
+        <div>
+          <h1 class="font-mono text-[11px] font-[600] uppercase tracking-wider text-[#171714]">
+            技能 / 本地注册表
+          </h1>
+          <p class="text-[12px] text-[#66645E] mt-0.5">
+            管理本机安装的能力与触发方式
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-5 font-mono text-[11px] text-[#66645E]" id="stats-counter">
+          <span><strong class="text-[#171714]" id="cnt-installed">0</strong> 已安装</span>
+          <span><strong class="text-[#171714]" id="cnt-enabled">0</strong> 已启用</span>
+          <span><strong class="text-[#D94A2B]" id="cnt-error">0</strong> 异常</span>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <input
+            type="text"
+            id="search-input"
+            oninput="handleSearch(this.value)"
+            placeholder="搜索名称、描述或命令…"
+            class="w-[240px] bg-[#F2F0EA] text-[13px] px-3 py-1.5 rounded border border-[#D5D2C9] focus:outline-none focus:border-[#171714] placeholder-[#929087]"
+          />
+          <button
+            onclick="handleRefresh()"
+            class="text-[11px] font-mono text-[#66645E] hover:text-[#171714] cursor-pointer"
+          >
+            刷新
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 主体区域 -->
+    <div class="flex-1 flex overflow-hidden">
+      <!-- 左侧列表 -->
+      <aside class="w-[380px] shrink-0 border-r border-[#D5D2C9] bg-[#FAF9F5] flex flex-col h-full">
+        <!-- 筛选栏 -->
+        <div class="flex gap-4 px-4 py-2 border-b border-[#D5D2C9] font-mono text-[11px] shrink-0" id="filter-bar">
+          <button onclick="setFilter('all')" id="filter-all" class="relative pb-1 cursor-pointer text-[#171714] font-[600]">
+            <span class="absolute left-0 bottom-0 w-full h-[2px] bg-[#D94A2B] filter-line"></span>
+            全部 <span id="tab-cnt-all">0</span>
+          </button>
+          <button onclick="setFilter('normal')" id="filter-normal" class="relative pb-1 cursor-pointer text-[#66645E] hover:text-[#171714]">
+            普通型 <span id="tab-cnt-normal">0</span>
+          </button>
+          <button onclick="setFilter('command')" id="filter-command" class="relative pb-1 cursor-pointer text-[#66645E] hover:text-[#171714]">
+            命令型 <span id="tab-cnt-command">0</span>
+          </button>
+          <button onclick="setFilter('disabled')" id="filter-disabled" class="relative pb-1 cursor-pointer text-[#66645E] hover:text-[#171714]">
+            已停用 <span id="tab-cnt-disabled">0</span>
+          </button>
+          <button onclick="setFilter('error')" id="filter-error" class="relative pb-1 cursor-pointer text-[#B42318] hover:opacity-80">
+            异常 <span id="tab-cnt-error">0</span>
+          </button>
+        </div>
+
+        <!-- 列表容器 -->
+        <div class="flex-1 overflow-y-auto" id="skills-list"></div>
+      </aside>
+
+      <!-- 右侧详情 -->
+      <main class="flex-1 overflow-y-auto bg-[#FAF9F5]" id="skill-detail"></main>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-[#171714] text-white text-[13px] px-4 py-2.5 rounded fade-in z-50 shadow-sm font-sans hidden"></div>
+
+    <script>
+      const INITIAL_SKILLS = [
+  {
+    "id": "pdf",
+    "name": "PDF",
+    "description": "读取、提取、合并、拆分和创建 PDF 文件",
+    "fullDescription": "提供完整的 PDF 文档解析与处理能力。可在对话流中提取指定页面的文本与表格，处理多文档合并，或将文本转换为 PDF 文件。",
+    "type": "normal",
+    "enabled": true,
+    "autoTrigger": true,
+    "command": null,
+    "version": "1.2.0",
+    "source": "System",
+    "path": "~/.agents/skills/pdf",
+    "configPath": "~/.agents/skills/pdf/SKILL.md",
+    "updatedAt": "2026-07-21 16:42",
+    "capabilities": [
+      "解析与提取 PDF 中的文本、表格和元数据",
+      "按页码范围拆分 PDF，或合并多个 PDF",
+      "生成排版 PDF 输出文件"
+    ],
+    "scenarios": [
+      "用户上传 PDF 并请求总结、提取数据或转换格式时",
+      "处理报表导出与文档归档"
+    ],
+    "boundaries": [
+      "不支持解密带密码保护且未提供密码的 PDF",
+      "纯扫描件依赖 OCR，识别率取决于图像清晰度"
+    ],
+    "examples": [
+      "帮我提取这份 PDF 的目录和主要结论。",
+      "把 report_a.pdf 和 report_b.pdf 合并为一个文件。"
+    ]
+  },
+  {
+    "id": "check",
+    "name": "Check",
+    "description": "检查代码改动、测试结果和发布准备状态",
+    "fullDescription": "用于代码改动审计和提交前合规检查。通过命令触发，静态分析 git diff、验证类型规范并运行单元测试。",
+    "type": "command",
+    "enabled": true,
+    "autoTrigger": false,
+    "command": "/check",
+    "commandUsage": "/check [target]",
+    "version": "1.0.0",
+    "source": "User",
+    "path": "~/.agents/skills/check",
+    "configPath": "~/.agents/skills/check/SKILL.md",
+    "updatedAt": "2026-07-20 09:18",
+    "capabilities": [
+      "审查 Git 工作区与暂存区的未提交改动",
+      "扫描潜在代码风险、语法错误与未引用依赖",
+      "评估测试覆盖率并生成 Release Check 报告"
+    ],
+    "scenarios": [
+      "准备 Git commit 或创建 PR 之前手动运行",
+      "对特定子目录执行针对性质量检查"
+    ],
+    "boundaries": [
+      "不包含自动修改或格式化代码功能，仅提供诊断",
+      "测试运行依赖本地 npm test 脚本"
+    ],
+    "examples": [
+      "/check",
+      "/check src/auth"
+    ]
+  },
+  {
+    "id": "better-loop",
+    "name": "Better Loop",
+    "description": "分析编码代理的执行过程和生命周期问题",
+    "fullDescription": "针对 AI Agent 在长任务循环中的死锁、重复工具调用或逻辑停滞进行深度分析。",
+    "type": "command",
+    "enabled": false,
+    "autoTrigger": false,
+    "command": "/better-loop",
+    "commandUsage": "/better-loop",
+    "version": "1.0.0",
+    "source": "User",
+    "path": "~/.agents/skills/better-loop",
+    "configPath": "~/.agents/skills/better-loop/SKILL.md",
+    "updatedAt": "2026-07-18 14:30",
+    "capabilities": [
+      "提取最近 50 次 Tool Call 的入参和返回值",
+      "检测是否陷入反复重试同一失败命令的死循环",
+      "输出推理链路图表与优化建议"
+    ],
+    "scenarios": [
+      "Agent 运行耗时异常或卡顿时分析上下文日志",
+      "排查 Agent 异常消耗 Token 的场景"
+    ],
+    "boundaries": [
+      "仅做事后日志分析，无法干预正在执行的进程"
+    ],
+    "examples": [
+      "/better-loop"
+    ]
+  },
+  {
+    "id": "release-audit",
+    "name": "Release Audit",
+    "description": "审查发布前的配置和依赖状态",
+    "fullDescription": "审查部署上线前的环境变量、密钥及依赖锁文件。",
+    "type": "command",
+    "enabled": false,
+    "autoTrigger": false,
+    "command": null,
+    "commandUsage": null,
+    "version": "0.8.0",
+    "source": "User",
+    "path": "~/.agents/skills/release-audit",
+    "configPath": "~/.agents/skills/release-audit/SKILL.md",
+    "updatedAt": "2026-07-16 11:05",
+    "capabilities": [
+      "检查 .env 与 .env.example 字段一致性",
+      "核查 package-lock.json 风险版本"
+    ],
+    "scenarios": [
+      "上线前的部署检查"
+    ],
+    "boundaries": [
+      "无法启用：未指定有效触发命令"
+    ],
+    "examples": []
+  },
+  {
+    "id": "gemini-api",
+    "name": "Gemini API",
+    "description": "使用 @google/genai SDK 进行文本与多模态生成",
+    "fullDescription": "内置 Google Gemini SDK 调用能力。支持流式回答、结构化 JSON 输出和函数调用。",
+    "type": "normal",
+    "enabled": true,
+    "autoTrigger": true,
+    "command": null,
+    "version": "2.4.0",
+    "source": "System",
+    "path": "~/.agents/skills/gemini-api",
+    "configPath": "~/.agents/skills/gemini-api/SKILL.md",
+    "updatedAt": "2026-07-21 10:15",
+    "capabilities": [
+      "提供 @google/genai SDK 标准初始化代码",
+      "支持 gemini-2.5-flash 与 gemini-2.5-pro 模型适配",
+      "包含 Stream Response 和 JSON Schema 模板"
+    ],
+    "scenarios": [
+      "构建 AI 功能模块时自动匹配",
+      "开发包含 AI 对话或结构化提炼的应用"
+    ],
+    "boundaries": [
+      "API Key 必须保存在服务端环境变量中"
+    ],
+    "examples": [
+      "在后端实现一个使用 Gemini 总结日志的接口。",
+      "如何使用 @google/genai 提取结构化 JSON？"
+    ]
+  },
+  {
+    "id": "env-check",
+    "name": "Env Validator",
+    "description": "校验环境变量配置（配置异常示例）",
+    "fullDescription": "比较当前 process.env 与 .env.example 字段定义。",
+    "type": "normal",
+    "enabled": false,
+    "autoTrigger": false,
+    "command": "/invalid-cmd",
+    "version": "0.9.1",
+    "source": "Workspace",
+    "path": "~/.agents/skills/env-check",
+    "configPath": "~/.agents/skills/env-check/SKILL.md",
+    "updatedAt": "2026-07-10 12:00",
+    "capabilities": [
+      "报告缺失的环境变量"
+    ],
+    "scenarios": [
+      "初始化项目环境检查"
+    ],
+    "boundaries": [
+      "配置异常：普通型 Skill 包含非法 command 且 autoTrigger 被关闭"
+    ],
+    "examples": []
+  }
+];
+      const STORAGE_KEY = 'skills-enabled-state';
+
+      // CLI 注册表 —— 多个 AI 编码 CLI 共用 skills
+      const CLI_REGISTRY = [
+        { id: 'claude',  name: 'Claude Code', short: 'CC', color: '#D97757' },
+        { id: 'codex',   name: 'Codex',       short: 'CX', color: '#1A1A1A' },
+        { id: 'opencode',name: 'OpenCode',    short: 'OC', color: '#3B82F6' }
+      ];
+
+      // 每个 Skill 默认共享给哪些 CLI
+      const SKILL_CLI_MAP = {
+        // Shared (~/.agents/skills/)
+        'check':['claude','codex','opencode'], 'design':['claude','codex','opencode'],
+        'frontend-design':['claude','codex','opencode'], 'health':['claude','codex','opencode'],
+        'hunt':['claude','codex','opencode'], 'impeccable':['claude','codex','opencode'],
+        'iot-prd-writer':['claude','codex','opencode'], 'kami':['claude','codex','opencode'],
+        'learn':['claude','codex','opencode'],
+        'mo-auth':['claude','codex','opencode'], 'mo-discover':['claude','codex','opencode'],
+        'mo-misc':['claude','codex','opencode'], 'mo-note':['claude','codex','opencode'],
+        'mo-remark':['claude','codex','opencode'], 'mo-shared':['claude','codex','opencode'],
+        'mo-user':['claude','codex','opencode'],
+        'prd-gatekeeper':['claude','codex','opencode'], 'product-manager-toolkit':['claude','codex','opencode'],
+        'read':['claude','codex','opencode'], 'report-generator':['claude','codex','opencode'],
+        'requirements-to-sop':['claude','codex','opencode'], 'think':['claude','codex','opencode'],
+        'ui-pattern-scout':['claude','codex','opencode'], 'write':['claude','codex','opencode'],
+        'write-a-':['claude','codex','opencode'],
+        // Claude + Codex
+        'html-visual-output':['claude','codex'],
+        // Codex only
+        'gsap-core':['codex'], 'gsap-react':['codex'], 'page-layout-guidelines':['codex']
+      };
+
+      let currentSkills = [];
+      let currentFilter = 'all';
+      let searchQuery = '';
+      let selectedSkillId = 'check';
+      let editMode = false;
+      let editData = {};
+
+      function validateSkill(skill) {
+        if (skill.type === 'normal') {
+          if (skill.autoTrigger !== true) {
+            return { valid: false, error: '普通型 Skill 必须配置 autoTrigger = true' };
+          }
+          if (skill.command !== null) {
+            return { valid: false, error: '普通型 Skill 的 command 必须为 null' };
+          }
+        }
+        if (skill.type === 'command') {
+          if (skill.autoTrigger !== false) {
+            return { valid: false, error: '命令型 Skill 必须配置 autoTrigger = false' };
+          }
+          if (!skill.command || !skill.command.startsWith('/')) {
+            return { valid: false, error: '命令型 Skill 必须配置以 "/" 开头的 command' };
+          }
+        }
+        return { valid: true, error: null };
+      }
+
+      function loadFromStorage() {
+        // 先把 CLI 数据合并进 INITIAL_SKILLS
+        const mergeClis = (skills) => skills.map(s => ({
+          ...s,
+          clis: [...(SKILL_CLI_MAP[s.id] || ['claude', 'codex', 'opencode'])]
+        }));
+
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) {
+            currentSkills = mergeClis(INITIAL_SKILLS);
+            return;
+          }
+          const storedState = JSON.parse(raw);
+          currentSkills = mergeClis(INITIAL_SKILLS);
+          currentSkills.forEach(s => {
+            const saved = storedState[s.id];
+            if (!saved) return;
+            if (typeof saved.enabled === 'boolean') s.enabled = saved.enabled;
+            if (saved.type) {
+              s.type = saved.type;
+              s.autoTrigger = saved.type === 'normal';
+            }
+            if (typeof saved.command === 'string' || saved.command === null) {
+              s.command = saved.command;
+            }
+            if (saved.commandUsage !== undefined) {
+              s.commandUsage = saved.commandUsage;
+            }
+            if (Array.isArray(saved.clis)) {
+              s.clis = [...saved.clis];
+            }
+          });
+        } catch (e) {
+          currentSkills = mergeClis(INITIAL_SKILLS);
+        }
+      }
+
+      function saveToStorage() {
+        try {
+          const stateToSave = {};
+          currentSkills.forEach(s => {
+            stateToSave[s.id] = {
+              enabled: s.enabled,
+              type: s.type,
+              command: s.command,
+              commandUsage: s.commandUsage || null,
+              clis: s.clis || []
+            };
+          });
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(stateToSave));
+        } catch (e) {
+          console.error('Failed to save state', e);
+        }
+      }
+
+      function showToast(msg) {
+        const toast = document.getElementById('toast');
+        toast.textContent = msg;
+        toast.classList.remove('hidden');
+        if (window._toastTimer) clearTimeout(window._toastTimer);
+        window._toastTimer = setTimeout(() => {
+          toast.classList.add('hidden');
+        }, 2500);
+      }
+
+      function handleSearch(val) {
+        searchQuery = val.trim().toLowerCase();
+        renderList();
+      }
+
+      function handleRefresh() {
+        showToast('已刷新配置状态');
+        render();
+      }
+
+      function setFilter(f) {
+        currentFilter = f;
+        renderTabs();
+        renderList();
+      }
+
+      function clearFilters() {
+        currentFilter = 'all';
+        searchQuery = '';
+        document.getElementById('search-input').value = '';
+        renderTabs();
+        renderList();
+      }
+
+      function selectSkill(id) {
+        selectedSkillId = id;
+        renderList();
+        renderDetail();
+      }
+
+      function toggleEnable(id, event) {
+        if (event) event.stopPropagation();
+        const skill = currentSkills.find(s => s.id === id);
+        if (!skill) return;
+
+        const v = validateSkill(skill);
+        if (!v.valid) {
+          showToast(v.error || '配置异常，无法启用');
+          return;
+        }
+
+        skill.enabled = !skill.enabled;
+        saveToStorage();
+
+        if (skill.type === 'normal') {
+          showToast(skill.enabled ? '已允许该 Skill 根据对话内容自动匹配。' : '该 Skill 已退出自动匹配。');
+        } else {
+          showToast(skill.enabled ? ('已启用，输入 ' + skill.command + ' 可调用该 Skill。') : '该命令已停用，输入命令也不会调用。');
+        }
+
+        renderStats();
+        renderTabs();
+        renderList();
+        renderDetail();
+      }
+
+      function copyText(txt) {
+        navigator.clipboard.writeText(txt).then(() => {
+          showToast('已复制到剪贴板');
+        }).catch(() => {
+          showToast('复制失败');
+        });
+      }
+
+      // ===== 编辑模式 =====
+
+      function enterEdit() {
+        const s = currentSkills.find(item => item.id === selectedSkillId);
+        if (!s) return;
+        editMode = true;
+        editData = {
+          type: s.type,
+          command: s.command || '',
+          commandUsage: s.commandUsage || '',
+          clis: [...(s.clis || [])]
+        };
+        renderDetail();
+      }
+
+      function cancelEdit() {
+        editMode = false;
+        editData = {};
+        renderDetail();
+      }
+
+      function saveEdit() {
+        const s = currentSkills.find(item => item.id === selectedSkillId);
+        if (!s) return;
+
+        // 应用编辑
+        s.type = editData.type;
+        if (editData.type === 'normal') {
+          s.autoTrigger = true;
+          s.command = null;
+          s.commandUsage = null;
+        } else {
+          s.autoTrigger = false;
+          s.command = editData.command.trim();
+          s.commandUsage = editData.commandUsage.trim() || s.command;
+        }
+        s.clis = [...editData.clis];
+
+        // 校验
+        const v = validateSkill(s);
+        if (!v.valid) {
+          showToast(v.error || '配置异常，请检查');
+          // 仍然保存但禁用
+          if (s.enabled) s.enabled = false;
+        } else {
+          showToast('配置已保存');
+        }
+
+        saveToStorage();
+        editMode = false;
+        editData = {};
+        render();
+      }
+
+      function updateEditType(type) {
+        editData.type = type;
+        if (type === 'normal') {
+          editData.command = '';
+          editData.commandUsage = '';
+        } else if (!editData.command) {
+          const s = currentSkills.find(item => item.id === selectedSkillId);
+          const defaultCmd = '/' + (s ? s.id : 'command');
+          editData.command = defaultCmd;
+          editData.commandUsage = defaultCmd;
+        }
+        renderDetail();
+      }
+
+      function updateEditField(field, val) {
+        editData[field] = val;
+      }
+
+      function toggleEditCli(cliId) {
+        const idx = editData.clis.indexOf(cliId);
+        if (idx >= 0) {
+          editData.clis.splice(idx, 1);
+        } else {
+          editData.clis.push(cliId);
+        }
+        renderDetail();
+      }
+
+      function getFilteredSkills() {
+        return currentSkills.filter(s => {
+          const v = validateSkill(s);
+          if (currentFilter === 'normal' && s.type !== 'normal') return false;
+          if (currentFilter === 'command' && s.type !== 'command') return false;
+          if (currentFilter === 'disabled' && s.enabled !== false) return false;
+          if (currentFilter === 'error' && v.valid) return false;
+
+          if (searchQuery) {
+            const haystack = (s.name + ' ' + s.description + ' ' + (s.command || '') + ' ' + s.path).toLowerCase();
+            if (!haystack.includes(searchQuery)) return false;
+          }
+          return true;
+        });
+      }
+
+      function renderStats() {
+        let installed = currentSkills.length;
+        let enabled = 0, errors = 0, normal = 0, command = 0, disabled = 0;
+        currentSkills.forEach(s => {
+          const v = validateSkill(s);
+          if (!v.valid) errors++;
+          if (s.type === 'normal') normal++;
+          if (s.type === 'command') command++;
+          if (s.enabled && v.valid) enabled++;
+          if (!s.enabled) disabled++;
+        });
+
+        document.getElementById('cnt-installed').textContent = installed;
+        document.getElementById('cnt-enabled').textContent = enabled;
+        document.getElementById('cnt-error').textContent = errors;
+
+        document.getElementById('tab-cnt-all').textContent = installed;
+        document.getElementById('tab-cnt-normal').textContent = normal;
+        document.getElementById('tab-cnt-command').textContent = command;
+        document.getElementById('tab-cnt-disabled').textContent = disabled;
+        document.getElementById('tab-cnt-error').textContent = errors;
+      }
+
+      function renderTabs() {
+        const filters = ['all', 'normal', 'command', 'disabled', 'error'];
+        filters.forEach(f => {
+          const btn = document.getElementById('filter-' + f);
+          if (!btn) return;
+          const oldLine = btn.querySelector('.filter-line');
+          if (oldLine) oldLine.remove();
+
+          if (f === currentFilter) {
+            btn.className = 'relative pb-1 cursor-pointer text-[#171714] font-[600]';
+            if (f === 'error') btn.className = 'relative pb-1 cursor-pointer text-[#B42318] font-[600]';
+            const line = document.createElement('span');
+            line.className = 'absolute left-0 bottom-0 w-full h-[2px] bg-[#D94A2B] filter-line';
+            btn.appendChild(line);
+          } else {
+            btn.className = 'relative pb-1 cursor-pointer text-[#66645E] hover:text-[#171714]';
+            if (f === 'error') btn.className = 'relative pb-1 cursor-pointer text-[#B42318] hover:opacity-80';
+          }
+        });
+      }
+
+      function renderList() {
+        const listEl = document.getElementById('skills-list');
+        const items = getFilteredSkills();
+
+        if (items.length === 0) {
+          listEl.innerHTML = `
+            <div class="p-8 text-center">
+              <p class="font-mono text-[11px] text-[#929087] uppercase mb-3">未找到技能</p>
+              <p class="text-[13px] text-[#66645E] mb-4">没有找到符合当前条件的 Skill</p>
+              <button onclick="clearFilters()" class="text-[12px] font-mono text-[#D94A2B] hover:underline cursor-pointer">清除筛选</button>
+            </div>
+          `;
+          return;
+        }
+
+        let html = '';
+        items.forEach(s => {
+          const isSelected = s.id === selectedSkillId;
+          const v = validateSkill(s);
+          const isDisabled = !s.enabled;
+
+          let toggleBtn = '';
+          if (v.valid) {
+            toggleBtn = `
+              <button onclick="toggleEnable('${s.id}', event)" class="w-[36px] h-[18px] rounded-full relative transition-colors shrink-0 cursor-pointer ${s.enabled ? 'bg-[#D94A2B]' : 'bg-[#D5D2C9]'}">
+                <span class="absolute top-[2px] w-[14px] h-[14px] bg-white rounded-full transition-transform ${s.enabled ? 'left-[18px]' : 'left-[2px]'}"></span>
+              </button>
+            `;
+          } else {
+            toggleBtn = `
+              <button disabled class="w-[36px] h-[18px] rounded-full bg-[#D5D2C9] relative opacity-40 cursor-not-allowed shrink-0">
+                <span class="absolute top-[2px] left-[2px] w-[14px] h-[14px] bg-[#929087] rounded-full"></span>
+              </button>
+            `;
+          }
+
+          let typeInfo = '';
+          if (!v.valid) {
+            typeInfo = '<span class="text-[#B42318]">配置异常 · !</span>';
+          } else if (s.type === 'normal') {
+            typeInfo = '普通型 · 自动匹配';
+          } else {
+            typeInfo = '命令型 · ' + s.command;
+          }
+
+          let cliBadges = '';
+          if (s.clis && s.clis.length > 0) {
+            cliBadges = s.clis.map(cid => {
+              const cli = CLI_REGISTRY.find(c => c.id === cid);
+              if (!cli) return '';
+              return `<span class="inline-block px-1.5 py-0.5 rounded text-[9px] font-[600] font-mono" style="background:${cli.color}1a;color:${cli.color}">${cli.short}</span>`;
+            }).join('');
+          }
+
+          html += `
+            <div onclick="selectSkill('${s.id}')" class="p-3.5 cursor-pointer border-b border-[#D5D2C9] hover:bg-[#EAE7DF] transition-colors relative ${isSelected ? 'bg-[#DDD9CF]' : ''}">
+              ${isSelected ? '<div class="absolute left-0 top-0 bottom-0 w-[3px] bg-[#D94A2B]"></div>' : ''}
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-[14px] font-[600] text-[#171714]">${s.name}</span>
+                ${toggleBtn}
+              </div>
+              <p class="text-[12px] truncate mb-1.5 ${isDisabled ? 'text-[#929087]' : 'text-[#66645E]'}">${s.description}</p>
+              <div class="flex items-center justify-between">
+                <div class="font-mono text-[10px] text-[#929087]">${typeInfo}</div>
+                <div class="flex gap-1">${cliBadges}</div>
+              </div>
+            </div>
+          `;
+        });
+
+        listEl.innerHTML = html;
+      }
+
+      function renderDetail() {
+        const detailEl = document.getElementById('skill-detail');
+        const s = currentSkills.find(item => item.id === selectedSkillId) || currentSkills[0];
+        if (!s) {
+          detailEl.innerHTML = '<div class="p-12 text-center text-[#66645E] font-mono text-[13px]">请从左侧选择一个 Skill 查看详情</div>';
+          return;
+        }
+
+        const v = validateSkill(s);
+
+        let toggleBtn = '';
+        if (v.valid) {
+          toggleBtn = `
+            <button onclick="toggleEnable('${s.id}', event)" class="w-[36px] h-[18px] rounded-full relative transition-colors shrink-0 cursor-pointer ${s.enabled ? 'bg-[#D94A2B]' : 'bg-[#D5D2C9]'}">
+              <span class="absolute top-[2px] w-[14px] h-[14px] bg-white rounded-full transition-transform ${s.enabled ? 'left-[18px]' : 'left-[2px]'}"></span>
+            </button>
+          `;
+        } else {
+          toggleBtn = `
+            <button disabled class="w-[36px] h-[18px] rounded-full bg-[#D5D2C9] relative opacity-40 cursor-not-allowed shrink-0">
+              <span class="absolute top-[2px] left-[2px] w-[14px] h-[14px] bg-[#929087] rounded-full"></span>
+            </button>
+          `;
+        }
+
+        let actionBtn = '';
+        if (editMode) {
+          actionBtn = `
+            <div class="flex items-center gap-2">
+              <button onclick="saveEdit()" class="text-[11px] font-mono font-[600] uppercase tracking-wider text-white bg-[#D94A2B] px-3 py-1 rounded hover:opacity-90 cursor-pointer">保存</button>
+              <button onclick="cancelEdit()" class="text-[11px] font-mono uppercase tracking-wider text-[#66645E] hover:text-[#171714] px-2 py-1 cursor-pointer">取消</button>
+            </div>
+          `;
+        } else {
+          actionBtn = `<button onclick="enterEdit()" class="text-[11px] font-mono uppercase tracking-wider text-[#66645E] hover:text-[#D94A2B] cursor-pointer border border-[#D5D2C9] px-3 py-1 rounded hover:border-[#D94A2B] transition-colors">编辑</button>`;
+        }
+
+        let triggerContent = '';
+        if (!v.valid) {
+          triggerContent = `
+            <h3 class="font-mono text-[11px] font-[600] uppercase tracking-wider text-[#B42318] mb-3">配置异常</h3>
+            <div class="bg-[#F2F0EA] border border-[#B42318] border-l-[3px] rounded px-4 py-3">
+              <p class="text-[13px] text-[#B42318]">${v.error}</p>
+            </div>
+            <p class="text-[12px] text-[#66645E] mt-3">请检查 SKILL.md 配置文件后重新加载，或在编辑模式中修正配置。</p>
+          `;
+        } else if (s.type === 'normal') {
+          triggerContent = `
+            <h3 class="font-mono text-[11px] font-[600] uppercase tracking-wider text-[#66645E] mb-3">触发方式 / 自动匹配</h3>
+            <p class="text-[14px] text-[#171714] leading-relaxed">启用后，系统可以根据对话内容自动匹配并调用该 Skill。关闭后，该 Skill 不再参与自动匹配。</p>
+          `;
+        } else {
+          const cmd = s.commandUsage || s.command || '';
+          triggerContent = `
+            <h3 class="font-mono text-[11px] font-[600] uppercase tracking-wider text-[#66645E] mb-3">触发方式 / 显式命令</h3>
+            <p class="text-[14px] text-[#171714] leading-relaxed mb-4">该 Skill 不参与自动匹配。只有主动输入以下命令时才会调用。</p>
+            <div class="flex items-center justify-between bg-[#F2F0EA] border border-[#D5D2C9] rounded px-4 py-3 mb-3">
+              <code class="font-mono text-[14px] text-[#171714]">${cmd}</code>
+              <button onclick="copyText('${cmd}')" class="font-mono text-[11px] text-[#66645E] hover:text-[#D94A2B] uppercase tracking-wider cursor-pointer">复制</button>
+            </div>
+            <p class="text-[12px] text-[#66645E]">关闭后，输入该命令也不会调用。</p>
+          `;
+        }
+
+        let capabilitiesHtml = '';
+        if (s.capabilities && s.capabilities.length > 0) {
+          capabilitiesHtml += '<div class="mb-5"><p class="font-mono text-[11px] uppercase tracking-wider text-[#929087] mb-2">主要能力</p><ul class="space-y-1.5 text-[13px] text-[#171714]">';
+          s.capabilities.forEach(c => {
+            capabilitiesHtml += `<li class="flex gap-2"><span class="text-[#D94A2B]">—</span><span>${c}</span></li>`;
+          });
+          capabilitiesHtml += '</ul></div>';
+        }
+
+        if (s.scenarios && s.scenarios.length > 0) {
+          capabilitiesHtml += '<div class="mb-5"><p class="font-mono text-[11px] uppercase tracking-wider text-[#929087] mb-2">适用场景</p><ul class="space-y-1.5 text-[13px] text-[#66645E]">';
+          s.scenarios.forEach(sc => {
+            capabilitiesHtml += `<li class="flex gap-2"><span>—</span><span>${sc}</span></li>`;
+          });
+          capabilitiesHtml += '</ul></div>';
+        }
+
+        if (s.boundaries && s.boundaries.length > 0) {
+          capabilitiesHtml += '<div><p class="font-mono text-[11px] uppercase tracking-wider text-[#929087] mb-2">能力边界</p><ul class="space-y-1.5 text-[13px] text-[#66645E]">';
+          s.boundaries.forEach(b => {
+            capabilitiesHtml += `<li class="flex gap-2"><span>—</span><span>${b}</span></li>`;
+          });
+          capabilitiesHtml += '</ul></div>';
+        }
+
+        let examplesHtml = '';
+        if (s.examples && s.examples.length > 0) {
+          if (s.type === 'command') {
+            examplesHtml = '<div class="space-y-2">';
+            s.examples.forEach(ex => {
+              examplesHtml += `<code class="block font-mono text-[13px] text-[#171714] bg-[#F2F0EA] border border-[#D5D2C9] rounded px-3 py-2">${ex}</code>`;
+            });
+            examplesHtml += '</div>';
+          } else {
+            examplesHtml = '<div class="space-y-2">';
+            s.examples.forEach(ex => {
+              examplesHtml += `<p class="text-[13px] text-[#171714] bg-[#F2F0EA] border border-[#D5D2C9] rounded px-3 py-2 italic">&quot;${ex}&quot;</p>`;
+            });
+            examplesHtml += '</div>';
+          }
+        } else {
+          examplesHtml = '<p class="text-[13px] text-[#929087] italic">暂无示例</p>';
+        }
+
+        let statusTag = '';
+        if (!v.valid) statusTag = '<span class="text-[#B42318]">配置异常</span>';
+        else if (s.enabled) statusTag = '<span class="text-[#3F6B4C]">已启用</span>';
+        else statusTag = '<span class="text-[#929087]">已停用</span>';
+
+        // ===== 配置区域：编辑模式 vs 只读 =====
+        let configSection = '';
+        if (editMode) {
+          let typeButtons = `
+            <div class="flex gap-2">
+              <button onclick="updateEditType('normal')" class="px-4 py-2 rounded text-[13px] font-mono transition-colors cursor-pointer ${editData.type === 'normal' ? 'bg-[#171714] text-white' : 'bg-[#F2F0EA] text-[#66645E] border border-[#D5D2C9] hover:border-[#171714]'}">普通型</button>
+              <button onclick="updateEditType('command')" class="px-4 py-2 rounded text-[13px] font-mono transition-colors cursor-pointer ${editData.type === 'command' ? 'bg-[#171714] text-white' : 'bg-[#F2F0EA] text-[#66645E] border border-[#D5D2C9] hover:border-[#171714]'}">命令型</button>
+            </div>
+            <p class="text-[12px] text-[#66645E] mt-2">${editData.type === 'normal' ? '启用后由系统根据对话内容自动匹配调用' : '仅在用户主动输入指定命令时触发'}</p>
+          `;
+
+          let commandFields = '';
+          if (editData.type === 'command') {
+            commandFields = `
+              <div class="mb-4">
+                <label class="font-mono text-[11px] uppercase tracking-wider text-[#929087] block mb-1.5">命令 <span class="text-[#B42318]">*</span></label>
+                <input type="text" value="${editData.command}" oninput="updateEditField('command', this.value)" placeholder="/your-command" class="w-full bg-[#F2F0EA] text-[14px] font-mono px-3 py-2 rounded border border-[#D5D2C9] focus:outline-none focus:border-[#171714] placeholder-[#929087]" />
+                <p class="text-[11px] text-[#929087] mt-1">必须以 / 开头</p>
+              </div>
+              <div class="mb-4">
+                <label class="font-mono text-[11px] uppercase tracking-wider text-[#929087] block mb-1.5">命令用法</label>
+                <input type="text" value="${editData.commandUsage}" oninput="updateEditField('commandUsage', this.value)" placeholder="/your-command [args]" class="w-full bg-[#F2F0EA] text-[14px] font-mono px-3 py-2 rounded border border-[#D5D2C9] focus:outline-none focus:border-[#171714] placeholder-[#929087]" />
+                <p class="text-[11px] text-[#929087] mt-1">展示用的完整命令格式，如 /check [target]</p>
+              </div>
+            `;
+          }
+
+          let cliCheckboxes = CLI_REGISTRY.map(cli => {
+            const checked = editData.clis.includes(cli.id);
+            return `
+              <label class="flex items-center gap-2 cursor-pointer px-3 py-2 rounded border transition-colors ${checked ? 'bg-[#F2F0EA] border-[#171714]' : 'bg-[#FAF9F5] border-[#D5D2C9] hover:bg-[#EAE7DF]'}">
+                <input type="checkbox" ${checked ? 'checked' : ''} onchange="toggleEditCli('${cli.id}')" class="cursor-pointer" />
+                <span class="w-2 h-2 rounded-full" style="background:${cli.color}"></span>
+                <span class="text-[13px] font-mono">${cli.name}</span>
+              </label>
+            `;
+          }).join('');
+
+          configSection = `
+            <section class="py-6 border-b border-[#D5D2C9]">
+              <div class="flex items-center justify-between mb-5">
+                <h3 class="font-mono text-[11px] font-[600] uppercase tracking-wider text-[#D94A2B]">编辑配置</h3>
+                <div class="flex items-center gap-2">
+                  <button onclick="saveEdit()" class="text-[11px] font-mono font-[600] uppercase tracking-wider text-white bg-[#D94A2B] px-4 py-1.5 rounded hover:opacity-90 cursor-pointer">保存</button>
+                  <button onclick="cancelEdit()" class="text-[11px] font-mono uppercase tracking-wider text-[#66645E] hover:text-[#171714] px-3 py-1.5 cursor-pointer">取消</button>
+                </div>
+              </div>
+
+              <div class="mb-5">
+                <label class="font-mono text-[11px] uppercase tracking-wider text-[#929087] block mb-2">技能类型</label>
+                ${typeButtons}
+              </div>
+
+              ${commandFields}
+
+              <div>
+                <label class="font-mono text-[11px] uppercase tracking-wider text-[#929087] block mb-2">共享 CLI</label>
+                <div class="grid grid-cols-3 gap-2">${cliCheckboxes}</div>
+                <p class="text-[11px] text-[#929087] mt-2">勾选表示该 Skill 已共享给对应的 CLI</p>
+              </div>
+            </section>
+          `;
+        } else {
+          configSection = `
+            <section class="py-6 border-b border-[#D5D2C9]">
+              <h3 class="font-mono text-[11px] font-[600] uppercase tracking-wider text-[#66645E] mb-4">配置信息</h3>
+              <dl class="grid grid-cols-[140px_1fr] gap-y-2.5 gap-x-4 text-[13px]">
+                <dt class="font-mono text-[11px] uppercase text-[#929087] pt-0.5">类型</dt>
+                <dd class="font-mono text-[#171714]">${s.type}</dd>
+
+                <dt class="font-mono text-[11px] uppercase text-[#929087] pt-0.5">自动触发</dt>
+                <dd class="font-mono text-[#171714]">${s.autoTrigger}</dd>
+
+                <dt class="font-mono text-[11px] uppercase text-[#929087] pt-0.5">命令</dt>
+                <dd class="font-mono text-[#171714]">${s.command ? s.command : 'null'}</dd>
+
+                <dt class="font-mono text-[11px] uppercase text-[#929087] pt-0.5">来源</dt>
+                <dd class="font-mono text-[#171714]">${s.source}</dd>
+
+                <dt class="font-mono text-[11px] uppercase text-[#929087] pt-0.5">版本</dt>
+                <dd class="font-mono text-[#171714]">${s.version}</dd>
+
+                <dt class="font-mono text-[11px] uppercase text-[#929087] pt-0.5">技能路径</dt>
+                <dd class="font-mono text-[#171714] flex items-center gap-2">
+                  <span class="truncate">${s.path}</span>
+                  <button onclick="copyText('${s.path}')" class="text-[10px] text-[#66645E] hover:text-[#D94A2B] shrink-0 cursor-pointer uppercase">复制</button>
+                </dd>
+
+                <dt class="font-mono text-[11px] uppercase text-[#929087] pt-0.5">配置文件</dt>
+                <dd class="font-mono text-[#171714] flex items-center gap-2">
+                  <span class="truncate">${s.configPath}</span>
+                  <button onclick="copyText('${s.configPath}')" class="text-[10px] text-[#66645E] hover:text-[#D94A2B] shrink-0 cursor-pointer uppercase">复制</button>
+                </dd>
+
+                <dt class="font-mono text-[11px] uppercase text-[#929087] pt-0.5">更新时间</dt>
+                <dd class="font-mono text-[#171714]">${s.updatedAt}</dd>
+              </dl>
+            </section>
+          `;
+        }
+
+        // ===== CLI 共享信息（只读模式） =====
+        let cliSection = '';
+        if (!editMode) {
+          let cliBadgesHtml = '';
+          if (s.clis && s.clis.length > 0) {
+            cliBadgesHtml = s.clis.map(cid => {
+              const cli = CLI_REGISTRY.find(c => c.id === cid);
+              if (!cli) return '';
+              return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded text-[12px] font-mono" style="background:${cli.color}1a;color:${cli.color}"><span class="w-1.5 h-1.5 rounded-full" style="background:${cli.color}"></span>${cli.name}</span>`;
+            }).join('');
+          } else {
+            cliBadgesHtml = '<span class="text-[12px] text-[#929087] italic">未共享给任何 CLI</span>';
+          }
+          cliSection = `
+            <section class="py-6 border-b border-[#D5D2C9]">
+              <h3 class="font-mono text-[11px] font-[600] uppercase tracking-wider text-[#66645E] mb-4">共享 CLI</h3>
+              <div class="flex flex-wrap gap-2">${cliBadgesHtml}</div>
+              <p class="text-[11px] text-[#929087] mt-3">该 Skill 已共享给以上 CLI 工具，点击编辑可修改共享范围</p>
+            </section>
+          `;
+        }
+
+        detailEl.innerHTML = `
+          <div class="max-w-[640px] mx-auto px-10 py-8">
+            <section class="pb-6 border-b border-[#D5D2C9]">
+              <h2 class="text-[30px] font-[700] text-[#171714] mb-2">${s.name}</h2>
+              <p class="text-[14px] text-[#66645E] mb-4">${s.description}</p>
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4 font-mono text-[11px] uppercase tracking-wider text-[#66645E]">
+                  <span>${s.type === 'normal' ? '普通型' : '命令型'} 技能</span>
+                  <span>·</span>
+                  <span>版本 ${s.version}</span>
+                  <span>·</span>
+                  ${statusTag}
+                </div>
+                <div class="flex items-center gap-3">
+                  ${actionBtn}
+                  ${editMode ? '' : toggleBtn}
+                </div>
+              </div>
+            </section>
+
+            <section class="py-6 border-b border-[#D5D2C9]">${triggerContent}</section>
+
+            <section class="py-6 border-b border-[#D5D2C9]">
+              <h3 class="font-mono text-[11px] font-[600] uppercase tracking-wider text-[#66645E] mb-4">能力说明</h3>
+              <p class="text-[14px] text-[#171714] leading-relaxed mb-5">${s.fullDescription}</p>
+              ${capabilitiesHtml}
+            </section>
+
+            ${configSection}
+            ${cliSection}
+
+            <section class="py-6">
+              <h3 class="font-mono text-[11px] font-[600] uppercase tracking-wider text-[#66645E] mb-4">使用示例</h3>
+              ${examplesHtml}
+            </section>
+          </div>
+        `;
+      }
+
+      function render() {
+        renderStats();
+        renderTabs();
+        renderList();
+        renderDetail();
+      }
+
+      // ===== 真实数据（从本机 ~/.agents/skills、~/.claude/skills、~/.codex/skills 读取） =====
+      INITIAL_SKILLS.length = 0;
+      INITIAL_SKILLS.push(
+        { id: 'check', name: 'Check', description: '审查代码改动、测试结果和发布准备状态', fullDescription: '用于代码改动审计和提交前合规检查。静态分析 git diff、验证类型规范并运行单元测试。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: '3.23.0', source: 'Shared', path: '~/.agents/skills/check', configPath: '~/.agents/skills/check/SKILL.md', updatedAt: '2026-05-13 13:58', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'design', name: 'Design', description: '生成独特的、生产级 UI 界面', fullDescription: '为组件、页面或视觉界面生成独特的、生产级 UI。支持截图驱动的迭代。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: '3.20.0', source: 'Shared', path: '~/.agents/skills/design', configPath: '~/.agents/skills/design/SKILL.md', updatedAt: '2026-05-13 13:58', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'frontend-design', name: 'Frontend Design', description: '设计和构建独特的前端页面和组件', fullDescription: '设计和构建独特的前端页面、组件、仪表盘和 HTML/CSS/React UI，提供精致的、可投入生产的视觉效果。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/frontend-design', configPath: '~/.agents/skills/frontend-design/SKILL.md', updatedAt: '2026-05-07 11:05', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'health', name: 'Health', description: '审计 Claude Code 配置栈，标记问题严重级别', fullDescription: '当 Claude 忽略指令、行为不一致、hooks 故障或 MCP 需要审计时运行预算感知的配置审计。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: '3.18.0', source: 'Shared', path: '~/.agents/skills/health', configPath: '~/.agents/skills/health/SKILL.md', updatedAt: '2026-05-13 13:58', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'hunt', name: 'Hunt', description: '排查错误的根本原因，在修复前先定位问题', fullDescription: '在应用任何修复之前，找到错误、崩溃、回归、截图报告的缺陷、意外行为和失败测试的根本原因。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: '3.20.0', source: 'Shared', path: '~/.agents/skills/hunt', configPath: '~/.agents/skills/hunt/SKILL.md', updatedAt: '2026-05-13 13:58', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'impeccable', name: 'Impeccable', description: '前端界面设计、优化、审计和改进', fullDescription: '用于设计、重新设计、优化、审计或改进前端界面。覆盖网站、落地页、仪表盘、产品 UI 等场景。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/impeccable', configPath: '~/.agents/skills/impeccable/SKILL.md', updatedAt: '2026-07-07 18:22', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'iot-prd-writer', name: 'IoT PRD Writer', description: '将零散需求整理成可交付 PRD 初稿', fullDescription: '适用于后台、平板 App 等场景；当用户明确要写 PRD、整理需求文档或评审 PRD 时使用。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/iot-prd-writer', configPath: '~/.agents/skills/iot-prd-writer/SKILL.md', updatedAt: '2026-05-08 18:26', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'kami', name: 'Kami', description: '高质量正式文档排版与视觉设计', fullDescription: '适合简历、一页纸、白皮书、信件和作品集的高质量正式文档排版与视觉设计。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/kami', configPath: '~/.agents/skills/kami/SKILL.md', updatedAt: '2026-04-30 10:58', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'learn', name: 'Learn', description: '六阶段研究工作流，将不熟悉领域转化为可发布内容', fullDescription: '运行六阶段研究工作流，将不熟悉的领域或收集的资料转化为可发布的内容。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: '3.15.0', source: 'Shared', path: '~/.agents/skills/learn', configPath: '~/.agents/skills/learn/SKILL.md', updatedAt: '2026-05-13 13:58', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'mo-auth', name: 'Mo Auth', description: '墨问 Auth 认证：API Key 配置与管理', fullDescription: '墨问 API Key 的配置与更新、获取当前的配置信息、获取 API Key 对应的账户信息。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/mo-auth', configPath: '~/.agents/skills/mo-auth/SKILL.md', updatedAt: '2026-07-20 11:40', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'mo-discover', name: 'Mo Discover', description: '墨问发现与动态查看', fullDescription: '查看自己的墨问动态：被关注、点赞、评论、收藏、关注的人有新的笔记发布。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/mo-discover', configPath: '~/.agents/skills/mo-discover/SKILL.md', updatedAt: '2026-07-20 11:40', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'mo-misc', name: 'Mo Misc', description: '墨问通用工具：文件上传与附件引用', fullDescription: '上传本地文件或远端 URL 到墨问、获取 file_id、为笔记/评论准备图片/音频/PDF 附件引用。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/mo-misc', configPath: '~/.agents/skills/mo-misc/SKILL.md', updatedAt: '2026-07-20 11:40', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'mo-note', name: 'Mo Note', description: '墨问笔记：创建、编辑、搜索笔记', fullDescription: '创建笔记、编辑笔记、设置笔记、查看某人的主页笔记列表、我的笔记列表、搜索笔记。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/mo-note', configPath: '~/.agents/skills/mo-note/SKILL.md', updatedAt: '2026-07-20 11:40', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'mo-remark', name: 'Mo Remark', description: '墨问 UID 备注名管理', fullDescription: '为墨问 UID 设置备注名、移除备注名以及使用备注名来检索墨问 UID。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/mo-remark', configPath: '~/.agents/skills/mo-remark/SKILL.md', updatedAt: '2026-07-20 11:40', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'mo-shared', name: 'Mo Shared', description: '墨问 CLI 共享规则与安全规则', fullDescription: '应用配置初始化、墨问 API Key 的配置与管理、墨问 CLI 响应的基础解析、安全规则。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/mo-shared', configPath: '~/.agents/skills/mo-shared/SKILL.md', updatedAt: '2026-07-20 11:40', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'mo-user', name: 'Mo User', description: '墨问用户搜索', fullDescription: '搜索墨问平台上的用户信息。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/mo-user', configPath: '~/.agents/skills/mo-user/SKILL.md', updatedAt: '2026-07-20 11:40', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'prd-gatekeeper', name: 'PRD Gatekeeper', description: '判断需求想法是否具备进入 PRD 写作的条件', fullDescription: '输入是需求想法、零散背景、方案草稿或需求方向；输出是准入结论（PASS / PASS with Assumptions / BLOCKED）、已确认信息、缺口清单、关键假设和写作输入摘要。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/prd-gatekeeper', configPath: '~/.agents/skills/prd-gatekeeper/SKILL.md', updatedAt: '2026-04-29 15:46', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'product-manager-toolkit', name: 'Product Manager Toolkit', description: '产品管理工具包：优先级、研究、PRD 和策略', fullDescription: '产品管理工具包，覆盖优先级排序、研究综合、PRD 撰写和策略制定。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/product-manager-toolkit', configPath: '~/.agents/skills/product-manager-toolkit/SKILL.md', updatedAt: '2026-05-08 11:16', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'read', name: 'Read', description: '将 URL 或 PDF 转换为干净的 Markdown', fullDescription: '将任意 URL 或 PDF 转换为干净的 Markdown，用于阅读、引用、标注或后续处理。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: '3.14.0', source: 'Shared', path: '~/.agents/skills/read', configPath: '~/.agents/skills/read/SKILL.md', updatedAt: '2026-05-13 13:58', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'report-generator', name: 'Report Generator', description: '高级报告生成专家，支持多格式输出和数据可视化', fullDescription: '支持 Markdown、HTML、PDF、JSON、Excel 格式输出，包含折线图、柱状图等数据可视化。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/report-generator', configPath: '~/.agents/skills/report-generator/SKILL.md', updatedAt: '2026-02-18 09:33', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'requirements-to-sop', name: 'Requirements to SOP', description: '将 PRD 或需求文档转化为页面级运营 SOP', fullDescription: '将 PRD、发布说明、功能规格或页面备注转化为页面级内部运营 SOP，保留来源到页面的可追溯性。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/requirements-to-sop', configPath: '~/.agents/skills/requirements-to-sop/SKILL.md', updatedAt: '2026-03-30 17:43', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'think', name: 'Think', description: '将粗略想法转化为批准的、决策完整的计划', fullDescription: '在写代码之前，将粗略想法转化为已批准的、决策完整的计划。覆盖新功能、架构决策和价值判断。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: '3.18.0', source: 'Shared', path: '~/.agents/skills/think', configPath: '~/.agents/skills/think/SKILL.md', updatedAt: '2026-05-13 13:58', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'ui-pattern-scout', name: 'UI Pattern Scout', description: '调研业界主流 UI 设计方案并输出结构化参考卡片', fullDescription: '覆盖局部组件（如状态指示器、筛选面板、批量操作栏）和页面级布局（如列表页、详情页、仪表盘）。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/ui-pattern-scout', configPath: '~/.agents/skills/ui-pattern-scout/SKILL.md', updatedAt: '2026-05-09 15:20', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'write', name: 'Write', description: '去除 AI 写作痕迹，改写为自然的中文或英文', fullDescription: '去除 AI 写作痕迹，将文本改写为自然的中文或英文表达。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: '3.20.0', source: 'Shared', path: '~/.agents/skills/write', configPath: '~/.agents/skills/write/SKILL.md', updatedAt: '2026-05-13 13:58', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'write-a-', name: 'Write a PRD', description: '通过用户访谈和代码探索创建 PRD', fullDescription: '通过用户访谈、代码库探索和模块设计来创建 PRD，然后提交为 GitHub Issue。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Shared', path: '~/.agents/skills/write-a-', configPath: '~/.agents/skills/write-a-/SKILL.md', updatedAt: '2026-03-30 14:46', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'html-visual-output', name: 'HTML Visual Output', description: '生成可内嵌 HTML 排版的 Markdown 文件', fullDescription: '将复杂说明、对比、流程、架构、状态摘要等信息格式化为带有内嵌 HTML 视觉块的 Markdown。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Claude+Codex', path: '~/.claude/skills/html-visual-output', configPath: '~/.claude/skills/html-visual-output/SKILL.md', updatedAt: '2026-05-25 18:20', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'gsap-core', name: 'GSAP Core', description: 'GSAP 核心 API 动画技能', fullDescription: 'GSAP 官方核心 API 技能：gsap.to()、from()、fromTo()、缓动、持续时间、交错动画、默认值、gsap.matchMedia() 响应式适配。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Codex', path: '~/.codex/skills/gsap-core', configPath: '~/.codex/skills/gsap-core/SKILL.md', updatedAt: '2026-05-28 16:48', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'gsap-react', name: 'GSAP React', description: 'GSAP React 动画技能（useGSAP hook）', fullDescription: 'GSAP 官方 React 技能：useGSAP hook、refs 引用、gsap.context() 上下文、组件卸载时自动清理。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Codex', path: '~/.codex/skills/gsap-react', configPath: '~/.codex/skills/gsap-react/SKILL.md', updatedAt: '2026-05-28 16:48', capabilities: [], scenarios: [], boundaries: [], examples: [] },
+        { id: 'page-layout-guidelines', name: 'Page Layout Guidelines', description: '前端页面布局规范（TEDIA AI Console）', fullDescription: 'TEDIA AI Console 前端页面布局规范（Vite + React + Tailwind 管理后台应用）。', type: 'normal', enabled: true, autoTrigger: true, command: null, version: 'unknown', source: 'Codex', path: '~/.codex/skills/page-layout-guidelines', configPath: '~/.codex/skills/page-layout-guidelines/SKILL.md', updatedAt: '2026-05-19 10:55', capabilities: [], scenarios: [], boundaries: [], examples: [] }
+      );
+
+      loadFromStorage();
+      render();
+    </script>
+  </body>
+</html>

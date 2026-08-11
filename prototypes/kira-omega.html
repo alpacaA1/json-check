@@ -1,0 +1,1936 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KIRA OMEGA IoT - 专业透视控制中心</title>
+    <!-- 依赖库 -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Lucide 图标库 -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;800&family=Inter:wght@300;400;700;900&display=swap');
+        
+        :root {
+            --primary: #d97706;
+            --bg-dark: #050505;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: #f3f4f6;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .font-mono { font-family: 'JetBrains+Mono', monospace; }
+
+        /* 极致平滑动画 */
+        .tooltip-enter {
+            animation: tooltipFadeIn 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes tooltipFadeIn {
+            from { opacity: 0; transform: scale(0.9) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        /* 自定义滑块 */
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+            width: 100%;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            margin-top: -7px;
+            box-shadow: 0 0 15px var(--primary);
+            cursor: pointer;
+        }
+
+        .glass-card {
+            background: rgba(15, 15, 15, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .energy-ring {
+            filter: drop-shadow(0 0 8px var(--primary));
+        }
+
+        .xray-transition {
+            transition: opacity 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <!-- Firebase 核心引入 -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-app.js";
+        import { getFirestore, doc, setDoc, onSnapshot, updateDoc, collection } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.1.0/firebase-auth.js";
+
+        // 将 Firebase 实例和方法挂载到 window 供跨作用域使用
+        window.FB_CORE = { initializeApp };
+        window.FB_METHODS = { getFirestore, doc, setDoc, onSnapshot, updateDoc, collection, getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged };
+    </script>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, useMemo } = React;
+
+        // Firebase 环境配置
+        const firebaseConfig = window.__firebase_config ? JSON.parse(window.__firebase_config) : {
+            apiKey: "", authDomain: "default.firebaseapp.com", projectId: "default",
+            storageBucket: "default.appspot.com", messagingSenderId: "0", appId: "0"
+        };
+        const appId = window.__app_id || 'kira-omega-iot-final';
+        const DB_PATH = ['artifacts', appId, 'public', 'data', 'machineState', 'latest'];
+
+        // --- 3D 咖啡机引擎组件 ---
+        const CoffeeMachine3D = ({ brewing, isXRay, selectedPartLabel, onPartClick, machineData }) => {
+            const mountRef = useRef(null);
+            const rendererRef = useRef(null);
+            const selectedPartLabelRef = useRef(selectedPartLabel);
+            const isXRayRef = useRef(isXRay);
+            const brewingRef = useRef(brewing);
+
+            useEffect(() => {
+                selectedPartLabelRef.current = selectedPartLabel;
+            }, [selectedPartLabel]);
+
+            useEffect(() => {
+                isXRayRef.current = isXRay;
+            }, [isXRay]);
+
+            useEffect(() => {
+                brewingRef.current = brewing;
+            }, [brewing]);
+
+            useEffect(() => {
+                if (!window.THREE || !mountRef.current) return;
+
+                const THREE = window.THREE;
+                const mount = mountRef.current;
+
+                const scene = new THREE.Scene();
+                scene.fog = new THREE.Fog(0x050505, 12, 28);
+
+                const camera = new THREE.PerspectiveCamera(42, Math.max(mount.clientWidth / Math.max(mount.clientHeight, 1), 1), 0.1, 1000);
+                camera.position.set(8.6, 5.4, 11.6);
+                camera.lookAt(0, -0.2, 0);
+
+                const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.setSize(mount.clientWidth, mount.clientHeight);
+                renderer.outputEncoding = THREE.sRGBEncoding;
+                renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                renderer.toneMappingExposure = 1.04;
+                mount.appendChild(renderer.domElement);
+                rendererRef.current = renderer;
+
+                const ambient = new THREE.AmbientLight(0xffffff, 0.38);
+                const hemi = new THREE.HemisphereLight(0xbad3ff, 0x0b0b0b, 0.48);
+                const keyLight = new THREE.DirectionalLight(0xffffff, 1.5);
+                keyLight.position.set(8, 12, 8);
+                const rimLight = new THREE.DirectionalLight(0x8ab0ff, 0.45);
+                rimLight.position.set(-8, 6, -8);
+                const accentLight = new THREE.PointLight(0xd97706, 0.5, 12);
+                accentLight.position.set(0, 0.5, 3.5);
+                scene.add(ambient, hemi, keyLight, rimLight, accentLight);
+
+
+                const machineGroup = new THREE.Group();
+                scene.add(machineGroup);
+
+                const shellMeshes = [];
+                const animatedPipes = [];
+                const animatedCoreRefs = { brewGroup: null, pump: null };
+
+                const createMat = (color, props = {}) => new THREE.MeshStandardMaterial({ color, metalness: 0.55, roughness: 0.35, ...props });
+
+                const attachPart = (mesh, data, { shell = false } = {}) => {
+                    mesh.userData = { ...data };
+                    machineGroup.add(mesh);
+                    if (shell) shellMeshes.push(mesh);
+                    return mesh;
+                };
+
+                const createPipe = (points, data) => {
+                    const curve = new THREE.CatmullRomCurve3(points);
+                    const mesh = new THREE.Mesh(
+                        new THREE.TubeGeometry(curve, 48, 0.05, 10, false),
+                        createMat(0x9f6b37, { metalness: 0.78, roughness: 0.22, emissive: 0x000000 })
+                    );
+                    mesh.userData = { ...data };
+                    machineGroup.add(mesh);
+                    animatedPipes.push(mesh);
+                    return mesh;
+                };
+
+                const shellMain = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(4.2, 5.2, 4.0), createMat(0x1a1a1a, { transparent: true, opacity: 0.96 })),
+                    { label: '机身外壳', type: 'shell', description: '承载主要结构并提供保温隔热与抗震支撑。' },
+                    { shell: true }
+                );
+                shellMain.position.set(0, 0, 0);
+
+                const frontPanel = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(3.55, 3.75, 0.12), createMat(0x282828, { transparent: true, opacity: 0.94, metalness: 0.82, roughness: 0.28 })),
+                    { label: '前面板', type: 'shell', description: '前面板集成出液口、状态灯与交互区。' },
+                    { shell: true }
+                );
+                frontPanel.position.set(0, 0.28, 2.06);
+
+                const topCover = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(3.85, 0.35, 3.6), createMat(0x212121, { transparent: true, opacity: 0.92 })),
+                    { label: '顶盖', type: 'shell', description: '覆盖豆仓与内部传动部件。' },
+                    { shell: true }
+                );
+                topCover.position.set(0, 2.55, 0);
+
+                const baseFrame = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(4.6, 0.62, 4.2), createMat(0x161616, { transparent: true, opacity: 0.95 })),
+                    { label: '底座框架', type: 'shell', description: '承重底座，固定泵体与热模块。' },
+                    { shell: true }
+                );
+                baseFrame.position.set(0, -2.55, 0);
+
+                const dripTray = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(2.55, 0.23, 1.35), createMat(0x3b3b3b, { metalness: 0.9, roughness: 0.24 })),
+                    { label: '滴水盘', type: 'external', description: '收集冲煮残液，支持快速抽拉清洁。' }
+                );
+                dripTray.position.set(0, -1.88, 1.48);
+
+                const cupPlatform = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.12, 1.0), createMat(0x474747, { metalness: 0.84, roughness: 0.2 })),
+                    { label: '接杯平台', type: 'external', description: '杯具支撑与防滑承托区域。' }
+                );
+                cupPlatform.position.set(0, -1.57, 1.44);
+
+                const groupHead = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(1.25, 0.56, 0.76), createMat(0x4b4b4b, { metalness: 0.86, roughness: 0.25, emissive: 0x000000 })),
+                    { label: '冲煮头', type: 'group_head', description: '分配高压热水至冲煮腔并控制萃取稳定性。' }
+                );
+                groupHead.position.set(0, -0.12, 1.56);
+
+                const dualSpout = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(0.86, 0.2, 0.35), createMat(0x575757, { metalness: 0.88, roughness: 0.2 })),
+                    { label: '双出液口', type: 'spout', description: '支持单双杯分流出液。' }
+                );
+                dualSpout.position.set(0, -0.54, 1.76);
+
+                const steamWand = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.07, 1.38, 16), createMat(0x9a9a9a, { metalness: 0.95, roughness: 0.18 })),
+                    { label: '蒸汽棒', type: 'steam_wand', description: '用于蒸汽打奶和热水辅助。' }
+                );
+                steamWand.position.set(1.46, -0.8, 1.46);
+                steamWand.rotation.z = 0.48;
+
+                const waterTank = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(0.86, 3.55, 2.45), createMat(0x1f3345, { transparent: true, opacity: 0.56, metalness: 0.18, roughness: 0.22 })),
+                    { label: '水箱', type: 'tank', description: `可拆卸供水模块，当前余量 ${machineData.water}%` }
+                );
+                waterTank.position.set(1.63, -0.08, -0.28);
+
+                const waterRatio = Math.max(0.06, Math.min(machineData.water / 100, 1));
+                const waterFill = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(0.62, 3.05 * waterRatio, 1.95), createMat(0x4ea2ff, { transparent: true, opacity: 0.45, metalness: 0.05, roughness: 0.1 })),
+                    { label: '水箱液位', type: 'tank', description: `实时液位：${machineData.water}%` }
+                );
+                waterFill.position.set(1.63, -1.56 + (3.05 * waterRatio) / 2, -0.28);
+
+                const beanRatioA = Math.max(0.08, Math.min(machineData.beansA / 100, 1));
+                const beanRatioB = Math.max(0.08, Math.min(machineData.beansB / 100, 1));
+
+                const hopperA = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.44, 1.02, 24), createMat(0x2a2a2a, { transparent: true, opacity: 0.8, roughness: 0.45 })),
+                    { label: '豆仓 A', type: 'hopper', id: 'A', detail: { bean: 'Ethiopia Yirgacheffe', level: `${machineData.beansA}%` }, description: '主豆仓，向左研磨模组供豆。' }
+                );
+                hopperA.position.set(-0.95, 1.98, -0.32);
+
+                const hopperB = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.44, 1.02, 24), createMat(0x2a2a2a, { transparent: true, opacity: 0.8, roughness: 0.45 })),
+                    { label: '豆仓 B', type: 'hopper', id: 'B', detail: { bean: 'Brazil Dark Roast', level: `${machineData.beansB}%` }, description: '副豆仓，支持混合配方与备用豆路。' }
+                );
+                hopperB.position.set(0.95, 1.98, -0.32);
+
+                const beansA = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.35, 0.86 * beanRatioA, 20), createMat(0x3a2518, { roughness: 0.72, metalness: 0.02 })),
+                    { label: '豆仓 A 豆量', type: 'hopper', id: 'A', description: `A 仓余量 ${machineData.beansA}%` }
+                );
+                beansA.position.set(-0.95, 1.58 + (0.86 * beanRatioA) / 2, -0.32);
+
+                const beansB = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.43, 0.35, 0.86 * beanRatioB, 20), createMat(0x4a2d1f, { roughness: 0.72, metalness: 0.02 })),
+                    { label: '豆仓 B 豆量', type: 'hopper', id: 'B', description: `B 仓余量 ${machineData.beansB}%` }
+                );
+                beansB.position.set(0.95, 1.58 + (0.86 * beanRatioB) / 2, -0.32);
+
+                const grinderA = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.86, 24), createMat(0x474747, { emissive: 0x000000, metalness: 0.58, roughness: 0.48 })),
+                    { label: '研磨模组 A', type: 'grinder', id: 'A', detail: { bean: 'Ethiopia Yirgacheffe', level: `${machineData.beansA}%` }, description: '锥刀研磨模组，负责主风味豆研磨。' }
+                );
+                grinderA.position.set(-0.86, 1.02, -0.5);
+
+                const grinderB = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.5, 0.86, 24), createMat(0x474747, { emissive: 0x000000, metalness: 0.58, roughness: 0.48 })),
+                    { label: '研磨模组 B', type: 'grinder', id: 'B', detail: { bean: 'Brazil Dark Roast', level: `${machineData.beansB}%` }, description: '备用/混配研磨模组。' }
+                );
+                grinderB.position.set(0.86, 1.02, -0.5);
+
+                const brewGroup = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.56, 0.56, 1.26, 24), createMat(0x5b5b5b, { emissive: 0x000000, metalness: 0.74, roughness: 0.3 })),
+                    { label: '冲煮单元', type: 'brew_group', description: '负责压粉、预浸润和萃取的核心机构。' }
+                );
+                brewGroup.position.set(0, -0.03, 0.12);
+                brewGroup.rotation.z = Math.PI / 2;
+                animatedCoreRefs.brewGroup = brewGroup;
+
+                const thermoblock = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.92, 1.1), createMat(0x6b6b6b, { emissive: 0x000000, metalness: 0.78, roughness: 0.24 })),
+                    { label: '热交换模块', type: 'thermoblock', description: '将水快速加热至萃取区间并稳定温度。' }
+                );
+                thermoblock.position.set(0.05, -1.08, -0.18);
+
+                const pump = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 1.02, 20), createMat(0x3f3f3f, { emissive: 0x000000, metalness: 0.84, roughness: 0.23 })),
+                    { label: '振动泵', type: 'pump', description: '提供约 9 bar 萃取压力。' }
+                );
+                pump.position.set(-1.12, -1.33, -0.24);
+                pump.rotation.z = Math.PI / 2;
+                animatedCoreRefs.pump = pump;
+
+                const flowMeter = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.42, 16), createMat(0x727272, { metalness: 0.68, roughness: 0.35 })),
+                    { label: '流量计', type: 'flowmeter', description: '监测水流脉冲并反馈出液体积。' }
+                );
+                flowMeter.position.set(-0.62, -0.72, -0.58);
+
+                const solenoidValve = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.46, 16), createMat(0x8a8a8a, { metalness: 0.9, roughness: 0.21 })),
+                    { label: '电磁阀', type: 'valve', description: '控制水路切换与泄压。' }
+                );
+                solenoidValve.position.set(0.45, -0.58, -0.62);
+                solenoidValve.rotation.z = Math.PI / 2;
+
+                const controlBoard = attachPart(
+                    new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.55, 0.16), createMat(0x1f4d2f, { metalness: 0.2, roughness: 0.74 })),
+                    { label: '控制主板', type: 'electronics', description: '负责温控、泵控、传感与任务调度。' }
+                );
+                controlBoard.position.set(-1.58, 0.02, -0.72);
+
+                createPipe([
+                    new THREE.Vector3(1.22, -1.55, -0.3),
+                    new THREE.Vector3(0.18, -1.55, -0.34),
+                    new THREE.Vector3(-1.05, -1.34, -0.3)
+                ], { label: '进水管路', type: 'pipeline', description: '水箱到泵体的低压供水路径。' });
+
+                createPipe([
+                    new THREE.Vector3(-0.56, -1.32, -0.22),
+                    new THREE.Vector3(-0.05, -1.08, -0.22),
+                    new THREE.Vector3(0.58, -0.98, -0.14)
+                ], { label: '加热供水管路', type: 'pipeline', description: '泵体至热交换模块的高压水路。' });
+
+                createPipe([
+                    new THREE.Vector3(0.62, -0.84, -0.05),
+                    new THREE.Vector3(0.32, -0.3, 0.1),
+                    new THREE.Vector3(0.02, -0.08, 0.4)
+                ], { label: '萃取管路', type: 'pipeline', description: '热水经阀控后进入冲煮单元。' });
+
+                createPipe([
+                    new THREE.Vector3(-0.05, -0.18, 0.65),
+                    new THREE.Vector3(0, -0.38, 1.18),
+                    new THREE.Vector3(0, -0.52, 1.68)
+                ], { label: '出液管路', type: 'pipeline', description: '萃取液从冲煮头输送至出液口。' });
+
+                const cup = attachPart(
+                    new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.36, 0.66, 24), createMat(0xf6f1ea, { metalness: 0.04, roughness: 0.82 })),
+                    { label: '杯位示意', type: 'external', description: '接杯区域用于承接萃取液。' }
+                );
+                cup.position.set(0, -1.38, 1.25);
+
+                const raycaster = new THREE.Raycaster();
+                const mouse = new THREE.Vector2();
+                const minCameraDistance = 7.2;
+                const maxCameraDistance = 18.5;
+
+                const zoomTo = (nextDistance) => {
+                    const clamped = Math.max(minCameraDistance, Math.min(maxCameraDistance, nextDistance));
+                    const dir = camera.position.clone().normalize();
+                    camera.position.copy(dir.multiplyScalar(clamped));
+                    camera.lookAt(0, -0.2, 0);
+                };
+
+                const resolveSelectable = (obj) => {
+                    let current = obj;
+                    while (current && !current.userData?.label && current.parent && current.parent !== machineGroup) current = current.parent;
+                    return current?.userData?.label ? current : null;
+                };
+
+                const handleClick = (e) => {
+                    const rect = mount.getBoundingClientRect();
+                    const w = Math.max(rect.width, 1);
+                    const h = Math.max(rect.height, 1);
+
+                    mouse.x = ((e.clientX - rect.left) / w) * 2 - 1;
+                    mouse.y = -((e.clientY - rect.top) / h) * 2 + 1;
+                    raycaster.setFromCamera(mouse, camera);
+
+                    const intersects = raycaster.intersectObjects(machineGroup.children, true);
+                    if (!intersects.length) {
+                        onPartClick(null);
+                        return;
+                    }
+
+                    let selectedObj = resolveSelectable(intersects[0].object);
+                    if (isXRayRef.current && selectedObj?.userData?.type === 'shell') {
+                        const nonShellHit = intersects
+                            .map(hit => resolveSelectable(hit.object))
+                            .find(obj => obj && obj.userData?.type !== 'shell');
+                        if (nonShellHit) selectedObj = nonShellHit;
+                    }
+
+                    if (selectedObj) {
+                        onPartClick({ ...selectedObj.userData, x: e.clientX - rect.left, y: e.clientY - rect.top });
+                    } else {
+                        onPartClick(null);
+                    }
+                };
+
+                let isDragging = false;
+                let prevMouse = { x: 0, y: 0 };
+
+                const handleDown = (e) => {
+                    isDragging = true;
+                    prevMouse = { x: e.clientX, y: e.clientY };
+                    mount.style.cursor = 'grabbing';
+                };
+
+                const handleUp = () => {
+                    isDragging = false;
+                    mount.style.cursor = 'pointer';
+                };
+
+                const handleMove = (e) => {
+                    if (!isDragging) return;
+                    machineGroup.rotation.y += (e.clientX - prevMouse.x) * 0.008;
+                    machineGroup.rotation.x += (e.clientY - prevMouse.y) * 0.006;
+                    machineGroup.rotation.x = Math.max(-0.48, Math.min(0.48, machineGroup.rotation.x));
+                    prevMouse = { x: e.clientX, y: e.clientY };
+                };
+
+                const handleWheel = (e) => {
+                    e.preventDefault();
+                    const currentDistance = camera.position.length();
+                    const zoomFactor = e.deltaY > 0 ? 1.08 : 0.92;
+                    zoomTo(currentDistance * zoomFactor);
+                };
+
+                const handleResize = () => {
+                    const w = Math.max(mount.clientWidth, 1);
+                    const h = Math.max(mount.clientHeight, 1);
+                    camera.aspect = w / h;
+                    camera.updateProjectionMatrix();
+                    renderer.setSize(w, h);
+                };
+
+                const handleZoomIn = () => {
+                    const currentDistance = camera.position.length();
+                    zoomTo(currentDistance * 0.9);
+                };
+
+                const handleZoomOut = () => {
+                    const currentDistance = camera.position.length();
+                    zoomTo(currentDistance * 1.1);
+                };
+
+                mount.addEventListener('click', handleClick);
+                mount.addEventListener('mousedown', handleDown);
+                mount.addEventListener('wheel', handleWheel, { passive: false });
+                window.addEventListener('coffee-model-zoom-in', handleZoomIn);
+                window.addEventListener('coffee-model-zoom-out', handleZoomOut);
+                window.addEventListener('mouseup', handleUp);
+                window.addEventListener('mousemove', handleMove);
+                window.addEventListener('resize', handleResize);
+
+                let animId;
+                const highlightColor = new THREE.Color(0xd97706);
+                const defaultColor = new THREE.Color(0x000000);
+
+                const animate = () => {
+                    animId = requestAnimationFrame(animate);
+                    const t = Date.now() * 0.005;
+                    const pulse = (Math.sin(t) + 1) / 2;
+
+                    shellMeshes.forEach((mesh, idx) => {
+                        const target = isXRayRef.current ? (idx === 1 ? 0.08 : 0.12) : (idx === 1 ? 0.94 : 0.96);
+                        mesh.material.opacity += (target - mesh.material.opacity) * 0.1;
+                    });
+
+                    machineGroup.traverse((child) => {
+                        if (child.isMesh && child.material && child.material.emissive !== undefined) {
+                            child.material.emissive.copy(defaultColor);
+                            child.material.emissiveIntensity = 0;
+                        }
+                    });
+
+                    if (animatedCoreRefs.brewGroup?.material) {
+                        animatedCoreRefs.brewGroup.material.emissive.setHex(0xd97706);
+                        animatedCoreRefs.brewGroup.material.emissiveIntensity = brewingRef.current ? (0.12 + pulse * 0.22) : 0.04;
+                    }
+                    if (animatedCoreRefs.pump?.material) {
+                        animatedCoreRefs.pump.material.emissive.setHex(0x8ab0ff);
+                        animatedCoreRefs.pump.material.emissiveIntensity = brewingRef.current ? (0.08 + pulse * 0.18) : 0;
+                    }
+                    animatedPipes.forEach((pipe, idx) => {
+                        if (!pipe.material) return;
+                        pipe.material.emissive.setHex(0xb46d2d);
+                        pipe.material.emissiveIntensity = brewingRef.current ? 0.08 + ((Math.sin(t * 1.6 + idx) + 1) / 2) * 0.18 : 0;
+                    });
+
+                    machineGroup.traverse((child) => {
+                        if (!child.isMesh || !child.material || child.material.emissive === undefined) return;
+                        if (child.userData?.label === selectedPartLabelRef.current || child.parent?.userData?.label === selectedPartLabelRef.current) {
+                            child.material.emissive.copy(highlightColor);
+                            child.material.emissiveIntensity = 0.35 + pulse * 0.55;
+                        }
+                    });
+
+                    if (!isDragging) machineGroup.rotation.y += 0.0018;
+                    renderer.render(scene, camera);
+                };
+                animate();
+
+                return () => {
+                    mount.removeEventListener('click', handleClick);
+                    mount.removeEventListener('mousedown', handleDown);
+                    mount.removeEventListener('wheel', handleWheel);
+                    window.removeEventListener('coffee-model-zoom-in', handleZoomIn);
+                    window.removeEventListener('coffee-model-zoom-out', handleZoomOut);
+                    window.removeEventListener('mouseup', handleUp);
+                    window.removeEventListener('mousemove', handleMove);
+                    window.removeEventListener('resize', handleResize);
+                    cancelAnimationFrame(animId);
+
+                    scene.traverse((node) => {
+                        if (!node.isMesh) return;
+                        node.geometry?.dispose?.();
+                        if (Array.isArray(node.material)) node.material.forEach((m) => m?.dispose?.());
+                        else node.material?.dispose?.();
+                    });
+
+                    if (mount && renderer.domElement && mount.contains(renderer.domElement)) mount.removeChild(renderer.domElement);
+                    renderer.dispose();
+                };
+            }, [machineData.beansA, machineData.beansB, machineData.water]);
+
+            return <div ref={mountRef} className="w-full h-full cursor-pointer" />;
+        };
+
+        // --- 主 App 组件 ---
+        const App = () => {
+            const [user, setUser] = useState(null);
+            const [db, setDb] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [activePart, setActivePart] = useState(null);
+            const [isXRay, setIsXRay] = useState(false);
+            const [isNodeOnline, setIsNodeOnline] = useState(false);
+            const [lastSyncAt, setLastSyncAt] = useState(null);
+            const [isSubmittingBrew, setIsSubmittingBrew] = useState(false);
+            const [nowTs, setNowTs] = useState(Date.now());
+            const [alertState, setAlertState] = useState({ dismissed: {}, snoozedUntil: {} });
+            const [guideAlert, setGuideAlert] = useState(null);
+            const [selectedBrewRecord, setSelectedBrewRecord] = useState(null);
+            const [simulationMode, setSimulationMode] = useState('live');
+            const [machineData, setMachineData] = useState({
+                temp: 93, selectedDrink: 'Pure Espresso', brewing: false, progress: 0,
+                water: 82, beansA: 85, beansB: 42, powerLoad: 0.42, lastBrewed: null, recentBrews: [],
+                maintenance: {
+                    cleaningDueAt: Date.now() + 2 * 24 * 60 * 60 * 1000,
+                    descalingDueAt: Date.now() + 9 * 24 * 60 * 60 * 1000,
+                    filterDueAt: Date.now() + 21 * 24 * 60 * 60 * 1000
+                }
+            });
+            const [telemetryRange, setTelemetryRange] = useState('1h');
+            const [telemetrySeries, setTelemetrySeries] = useState(() => {
+                const now = Date.now();
+                const build = (base, volatility) => Array.from({ length: 120 }, (_, idx) => ({
+                    t: now - (119 - idx) * 60 * 1000,
+                    v: Math.max(0, Number((base + (Math.sin(idx / 5) * volatility) + ((Math.random() - 0.5) * volatility * 0.7)).toFixed(2)))
+                }));
+                return {
+                    temp: build(93, 1.3),
+                    power: build(0.52, 0.12),
+                    water: build(82, 0.35)
+                };
+            });
+            const [deviceTwin, setDeviceTwin] = useState(() => ({
+                desired: { temp: 93, selectedDrink: 'Pure Espresso', cleaningMode: 'auto' },
+                reported: { temp: 93, selectedDrink: 'Pure Espresso', cleaningMode: 'auto' },
+                desiredVersion: 12,
+                reportedVersion: 12,
+                updatedAt: Date.now()
+            }));
+            const [commandQueue, setCommandQueue] = useState(() => ([
+                { id: Date.now() - 230000, name: 'sync.time', payload: { tz: 'Asia/Shanghai' }, status: 'success', errorCode: null, durationMs: 420, createdAt: Date.now() - 230000, updatedAt: Date.now() - 229580 },
+                { id: Date.now() - 510000, name: 'maintenance.rinse', payload: { level: 'quick' }, status: 'success', errorCode: null, durationMs: 1380, createdAt: Date.now() - 510000, updatedAt: Date.now() - 508620 }
+            ]));
+            const [firmwareState, setFirmwareState] = useState(() => ({
+                currentVersion: '2.3.1',
+                targetVersion: '2.3.1',
+                status: 'idle',
+                channel: 'stable',
+                availableVersions: ['2.4.0', '2.3.2', '2.3.1'],
+                lastUpgradeAt: Date.now() - 5 * 24 * 60 * 60 * 1000,
+                history: [
+                    { id: Date.now() - 21 * 24 * 60 * 60 * 1000, version: '2.3.1', mode: 'scheduled', status: 'success', at: Date.now() - 21 * 24 * 60 * 60 * 1000 },
+                    { id: Date.now() - 49 * 24 * 60 * 60 * 1000, version: '2.3.0', mode: 'manual', status: 'success', at: Date.now() - 49 * 24 * 60 * 60 * 1000 }
+                ]
+            }));
+            const [diagnosticsState, setDiagnosticsState] = useState({
+                running: false,
+                result: null,
+                checks: [],
+                lastRunAt: null
+            });
+            const [auditLogs, setAuditLogs] = useState(() => ([
+                { id: Date.now() - 340000, actor: 'operator', action: 'brew.task.submit', detail: '下发 Pure Espresso @93°C', status: 'success', at: Date.now() - 340000 },
+                { id: Date.now() - 920000, actor: 'system', action: 'alert.create', detail: '研磨仓 B 余量低', status: 'warning', at: Date.now() - 920000 }
+            ]));
+
+            const machineDataRef = useRef(machineData);
+            useEffect(() => {
+                machineDataRef.current = machineData;
+            }, [machineData]);
+
+            const appendAudit = (action, detail, status = 'success', actor = 'operator') => {
+                const entry = {
+                    id: Date.now() + Math.floor(Math.random() * 1000),
+                    actor,
+                    action,
+                    detail,
+                    status,
+                    at: Date.now()
+                };
+                setAuditLogs(prev => [entry, ...prev].slice(0, 30));
+            };
+
+            const rawAlerts = useMemo(() => {
+                const items = [];
+                if (!isNodeOnline) items.push({ id: 'offline', level: 'critical', title: '设备离线', desc: '设备与云端同步中断。', action: '检查电源与网络后重连设备。', guide: '请确认：1) 设备电源正常；2) 路由器网络可用；3) 设备 Wi-Fi 未掉线。' });
+                if (machineData.water < 15) items.push({ id: 'water_low', level: 'warning', title: '净水余量低', desc: `当前仅 ${machineData.water}%`, action: '请尽快补水，避免冲煮中断。', guide: '补水后建议执行一次冲洗，确保水路稳定。' });
+                if (machineData.beansA < 15) items.push({ id: 'beans_a_low', level: 'warning', title: '研磨仓 A 余量低', desc: `当前仅 ${machineData.beansA}%`, action: '建议补充 A 仓豆料。', guide: '补豆后请检查磨豆粗细与风味偏差。' });
+                if (machineData.beansB < 15) items.push({ id: 'beans_b_low', level: 'warning', title: '研磨仓 B 余量低', desc: `当前仅 ${machineData.beansB}%`, action: '建议补充 B 仓豆料。', guide: '补豆后建议执行一次小杯测试。' });
+                if (machineData.temp < 88 || machineData.temp > 96) items.push({ id: 'temp_abnormal', level: 'critical', title: '核心温度异常', desc: `当前 ${machineData.temp}°C`, action: '建议调整到 88-96°C 再执行冲煮。', guide: '若持续异常，请暂停冲煮并检查加热模块。' });
+                return items;
+            }, [isNodeOnline, machineData.water, machineData.beansA, machineData.beansB, machineData.temp]);
+
+            const alerts = useMemo(() => {
+                return rawAlerts.filter((alert) => {
+                    if (alertState.dismissed[alert.id]) return false;
+                    const snoozedUntil = alertState.snoozedUntil[alert.id] || 0;
+                    return snoozedUntil <= nowTs;
+                });
+            }, [rawAlerts, alertState, nowTs]);
+
+            const telemetryWindowed = useMemo(() => {
+                const points = telemetryRange === '24h' ? 120 : 60;
+                const downsample = telemetryRange === '24h' ? 1 : 2;
+                const normalize = (arr) => arr.slice(-points).filter((_, idx) => idx % downsample === 0);
+                return {
+                    temp: normalize(telemetrySeries.temp),
+                    power: normalize(telemetrySeries.power),
+                    water: normalize(telemetrySeries.water)
+                };
+            }, [telemetrySeries, telemetryRange]);
+
+            const toSpark = (series, minValue, maxValue) => {
+                if (!series || series.length === 0) return '';
+                const w = 160;
+                const h = 42;
+                const span = maxValue - minValue || 1;
+                return series.map((item, idx) => {
+                    const x = (idx / Math.max(series.length - 1, 1)) * w;
+                    const y = h - ((Math.max(minValue, Math.min(maxValue, item.v)) - minValue) / span) * h;
+                    return `${idx === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+                }).join(' ');
+            };
+
+            const driftDetected = useMemo(() => {
+                return JSON.stringify(deviceTwin.desired) !== JSON.stringify(deviceTwin.reported) || deviceTwin.desiredVersion !== deviceTwin.reportedVersion;
+            }, [deviceTwin]);
+
+            const simulationProfiles = useMemo(() => {
+                const now = Date.now();
+                return {
+                    all_normal: {
+                        isNodeOnline: true,
+                        machineData: {
+                            temp: 93,
+                            selectedDrink: 'Pure Espresso',
+                            brewing: false,
+                            progress: 0,
+                            water: 86,
+                            beansA: 78,
+                            beansB: 66,
+                            powerLoad: 0.38,
+                            lastBrewed: now - 16 * 60 * 1000,
+                            recentBrews: [
+                                { id: now - 16 * 60 * 1000, drink: 'Pure Espresso', temp: 93, status: 'completed', at: now - 16 * 60 * 1000 },
+                                { id: now - 42 * 60 * 1000, drink: 'Omega Blend', temp: 92, status: 'completed', at: now - 42 * 60 * 1000 }
+                            ],
+                            maintenance: {
+                                cleaningDueAt: now + 3 * 24 * 60 * 60 * 1000,
+                                descalingDueAt: now + 12 * 24 * 60 * 60 * 1000,
+                                filterDueAt: now + 26 * 24 * 60 * 60 * 1000
+                            }
+                        },
+                        alertState: { dismissed: {}, snoozedUntil: {} },
+                        telemetrySeries: {
+                            temp: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((92.5 + Math.sin(idx / 9) * 0.8).toFixed(2)) })),
+                            power: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((0.42 + Math.sin(idx / 7) * 0.06).toFixed(2)) })),
+                            water: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((86 - idx * 0.05).toFixed(2)) }))
+                        },
+                        deviceTwin: {
+                            desired: { temp: 93, selectedDrink: 'Pure Espresso', cleaningMode: 'auto' },
+                            reported: { temp: 93, selectedDrink: 'Pure Espresso', cleaningMode: 'auto' },
+                            desiredVersion: 12,
+                            reportedVersion: 12,
+                            updatedAt: now - 2 * 60 * 1000
+                        },
+                        firmwareState: {
+                            currentVersion: '2.3.1',
+                            targetVersion: '2.3.1',
+                            status: 'idle',
+                            channel: 'stable',
+                            availableVersions: ['2.4.0', '2.3.2', '2.3.1'],
+                            lastUpgradeAt: now - 5 * 24 * 60 * 60 * 1000,
+                            history: [
+                                { id: now - 21 * 24 * 60 * 60 * 1000, version: '2.3.1', mode: 'scheduled', status: 'success', at: now - 21 * 24 * 60 * 60 * 1000 }
+                            ]
+                        },
+                        commandQueue: [
+                            { id: now - 180000, name: 'sync.time', payload: { tz: 'Asia/Shanghai' }, status: 'success', errorCode: null, durationMs: 410, createdAt: now - 180000, updatedAt: now - 179590 },
+                            { id: now - 360000, name: 'brew.quick_test', payload: { temp: 92 }, status: 'success', errorCode: null, durationMs: 1210, createdAt: now - 360000, updatedAt: now - 358790 }
+                        ],
+                        auditLogs: [
+                            { id: now - 180000, actor: 'operator', action: 'command.exec', detail: '执行 sync.time', status: 'success', at: now - 180000 },
+                            { id: now - 420000, actor: 'system', action: 'snapshot', detail: '状态快照同步成功', status: 'success', at: now - 420000 }
+                        ]
+                    },
+                    warning_alerts: {
+                        isNodeOnline: true,
+                        machineData: {
+                            temp: 95,
+                            selectedDrink: 'Omega Blend',
+                            brewing: false,
+                            progress: 0,
+                            water: 11,
+                            beansA: 12,
+                            beansB: 9,
+                            powerLoad: 0.64,
+                            lastBrewed: now - 6 * 60 * 1000,
+                            recentBrews: [
+                                { id: now - 6 * 60 * 1000, drink: 'Omega Blend', temp: 95, status: 'completed', at: now - 6 * 60 * 1000 },
+                                { id: now - 32 * 60 * 1000, drink: 'Dark Americano', temp: 94, status: 'queued', at: now - 32 * 60 * 1000 }
+                            ],
+                            maintenance: {
+                                cleaningDueAt: now + 1 * 24 * 60 * 60 * 1000,
+                                descalingDueAt: now + 4 * 24 * 60 * 60 * 1000,
+                                filterDueAt: now + 10 * 24 * 60 * 60 * 1000
+                            }
+                        },
+                        alertState: { dismissed: {}, snoozedUntil: {} },
+                        telemetrySeries: {
+                            temp: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((94 + Math.sin(idx / 4) * 1.8).toFixed(2)) })),
+                            power: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((0.66 + Math.sin(idx / 5) * 0.2).toFixed(2)) })),
+                            water: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((13 - idx * 0.04).toFixed(2)) }))
+                        },
+                        deviceTwin: {
+                            desired: { temp: 93, selectedDrink: 'Omega Blend', cleaningMode: 'manual' },
+                            reported: { temp: 95, selectedDrink: 'Omega Blend', cleaningMode: 'auto' },
+                            desiredVersion: 13,
+                            reportedVersion: 12,
+                            updatedAt: now - 11 * 60 * 1000
+                        },
+                        firmwareState: {
+                            currentVersion: '2.3.1',
+                            targetVersion: '2.4.0',
+                            status: 'available',
+                            channel: 'stable',
+                            availableVersions: ['2.4.0', '2.3.2', '2.3.1'],
+                            lastUpgradeAt: now - 12 * 24 * 60 * 60 * 1000,
+                            history: [
+                                { id: now - 12 * 24 * 60 * 60 * 1000, version: '2.3.1', mode: 'manual', status: 'success', at: now - 12 * 24 * 60 * 60 * 1000 }
+                            ]
+                        },
+                        commandQueue: [
+                            { id: now - 40000, name: 'brew.profile.apply', payload: { profile: 'Omega Blend' }, status: 'running', errorCode: null, durationMs: null, createdAt: now - 40000, updatedAt: now - 2000 },
+                            { id: now - 260000, name: 'sensor.self_check', payload: { scope: 'thermal' }, status: 'failed', errorCode: 'E_TEMP_DRIFT', durationMs: 820, createdAt: now - 260000, updatedAt: now - 259180 }
+                        ],
+                        auditLogs: [
+                            { id: now - 40000, actor: 'operator', action: 'profile.apply', detail: '切换 Omega Blend 配方', status: 'running', at: now - 40000 },
+                            { id: now - 260000, actor: 'system', action: 'diagnose.sensor', detail: '温控漂移超阈值', status: 'warning', at: now - 260000 }
+                        ]
+                    },
+                    critical_offline: {
+                        isNodeOnline: false,
+                        machineData: {
+                            temp: 98,
+                            selectedDrink: 'Dark Americano',
+                            brewing: false,
+                            progress: 0,
+                            water: 4,
+                            beansA: 6,
+                            beansB: 5,
+                            powerLoad: 0,
+                            lastBrewed: now - 3 * 60 * 60 * 1000,
+                            recentBrews: [
+                                { id: now - 3 * 60 * 60 * 1000, drink: 'Dark Americano', temp: 98, status: 'failed', at: now - 3 * 60 * 60 * 1000 },
+                                { id: now - 5 * 60 * 60 * 1000, drink: 'Pure Espresso', temp: 97, status: 'failed', at: now - 5 * 60 * 60 * 1000 }
+                            ],
+                            maintenance: {
+                                cleaningDueAt: now - 1 * 24 * 60 * 60 * 1000,
+                                descalingDueAt: now - 5 * 24 * 60 * 60 * 1000,
+                                filterDueAt: now + 2 * 24 * 60 * 60 * 1000
+                            }
+                        },
+                        alertState: { dismissed: {}, snoozedUntil: {} },
+                        telemetrySeries: {
+                            temp: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((97 + Math.sin(idx / 3) * 2.1).toFixed(2)) })),
+                            power: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((idx > 96 ? 0.06 : 0.54 + Math.sin(idx / 4) * 0.3).toFixed(2)) })),
+                            water: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((8 - idx * 0.03).toFixed(2)) }))
+                        },
+                        deviceTwin: {
+                            desired: { temp: 92, selectedDrink: 'Dark Americano', cleaningMode: 'auto' },
+                            reported: { temp: 98, selectedDrink: 'Dark Americano', cleaningMode: 'manual' },
+                            desiredVersion: 14,
+                            reportedVersion: 12,
+                            updatedAt: now - 32 * 60 * 1000
+                        },
+                        firmwareState: {
+                            currentVersion: '2.3.1',
+                            targetVersion: '2.4.0',
+                            status: 'failed',
+                            channel: 'stable',
+                            availableVersions: ['2.4.0', '2.3.2', '2.3.1'],
+                            lastUpgradeAt: now - 1 * 24 * 60 * 60 * 1000,
+                            history: [
+                                { id: now - 1 * 24 * 60 * 60 * 1000, version: '2.4.0', mode: 'scheduled', status: 'failed', at: now - 1 * 24 * 60 * 60 * 1000 }
+                            ]
+                        },
+                        commandQueue: [
+                            { id: now - 42000, name: 'firmware.update', payload: { to: '2.4.0' }, status: 'failed', errorCode: 'E_CONN_DROP', durationMs: 9100, createdAt: now - 42000, updatedAt: now - 32900 },
+                            { id: now - 190000, name: 'device.reboot', payload: {}, status: 'queued', errorCode: null, durationMs: null, createdAt: now - 190000, updatedAt: now - 190000 }
+                        ],
+                        auditLogs: [
+                            { id: now - 42000, actor: 'operator', action: 'firmware.upgrade', detail: '升级到 2.4.0 失败：网络中断', status: 'critical', at: now - 42000 },
+                            { id: now - 300000, actor: 'system', action: 'device.offline', detail: '心跳丢失，设备离线', status: 'critical', at: now - 300000 }
+                        ]
+                    },
+                    brewing_running: {
+                        isNodeOnline: true,
+                        machineData: {
+                            temp: 94,
+                            selectedDrink: 'Omega Blend',
+                            brewing: true,
+                            progress: 62,
+                            water: 54,
+                            beansA: 41,
+                            beansB: 37,
+                            powerLoad: 2.24,
+                            lastBrewed: now - 2 * 60 * 1000,
+                            recentBrews: [
+                                { id: now - 2 * 60 * 1000, drink: 'Omega Blend', temp: 94, status: 'running', at: now - 2 * 60 * 1000 },
+                                { id: now - 46 * 60 * 1000, drink: 'Pure Espresso', temp: 93, status: 'completed', at: now - 46 * 60 * 1000 }
+                            ],
+                            maintenance: {
+                                cleaningDueAt: now + 2 * 24 * 60 * 60 * 1000,
+                                descalingDueAt: now + 11 * 24 * 60 * 60 * 1000,
+                                filterDueAt: now + 24 * 24 * 60 * 60 * 1000
+                            }
+                        },
+                        alertState: { dismissed: {}, snoozedUntil: {} },
+                        telemetrySeries: {
+                            temp: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((idx > 90 ? 94 + Math.sin(idx / 2) * 2.2 : 92 + Math.sin(idx / 7) * 0.8).toFixed(2)) })),
+                            power: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((idx > 90 ? 2.18 + Math.sin(idx / 2) * 0.18 : 0.56 + Math.sin(idx / 6) * 0.1).toFixed(2)) })),
+                            water: Array.from({ length: 120 }, (_, idx) => ({ t: now - (119 - idx) * 60 * 1000, v: Number((58 - idx * 0.03).toFixed(2)) }))
+                        },
+                        deviceTwin: {
+                            desired: { temp: 94, selectedDrink: 'Omega Blend', cleaningMode: 'auto' },
+                            reported: { temp: 94, selectedDrink: 'Omega Blend', cleaningMode: 'auto' },
+                            desiredVersion: 15,
+                            reportedVersion: 15,
+                            updatedAt: now - 1 * 60 * 1000
+                        },
+                        firmwareState: {
+                            currentVersion: '2.3.2',
+                            targetVersion: '2.3.2',
+                            status: 'idle',
+                            channel: 'stable',
+                            availableVersions: ['2.4.0', '2.3.2', '2.3.1'],
+                            lastUpgradeAt: now - 8 * 24 * 60 * 60 * 1000,
+                            history: [
+                                { id: now - 8 * 24 * 60 * 60 * 1000, version: '2.3.2', mode: 'scheduled', status: 'success', at: now - 8 * 24 * 60 * 60 * 1000 }
+                            ]
+                        },
+                        commandQueue: [
+                            { id: now - 36000, name: 'brew.start', payload: { recipe: 'Omega Blend', temp: 94 }, status: 'running', errorCode: null, durationMs: null, createdAt: now - 36000, updatedAt: now - 5000 },
+                            { id: now - 260000, name: 'grinder.calibrate', payload: { target: 'A' }, status: 'success', errorCode: null, durationMs: 2320, createdAt: now - 260000, updatedAt: now - 257680 }
+                        ],
+                        auditLogs: [
+                            { id: now - 36000, actor: 'operator', action: 'brew.start', detail: 'Omega Blend 进行中', status: 'running', at: now - 36000 },
+                            { id: now - 260000, actor: 'system', action: 'grinder.calibrate', detail: '研磨模组 A 校准完成', status: 'success', at: now - 260000 }
+                        ]
+                    }
+                };
+            }, []);
+
+            useEffect(() => {
+                const timer = window.setInterval(() => setNowTs(Date.now()), 30000);
+                return () => window.clearInterval(timer);
+            }, []);
+
+            useEffect(() => {
+                if (simulationMode === 'live') return;
+                const profile = simulationProfiles[simulationMode];
+                if (!profile) return;
+
+                setIsNodeOnline(profile.isNodeOnline);
+                setMachineData((prev) => ({ ...prev, ...profile.machineData }));
+                setAlertState(profile.alertState || { dismissed: {}, snoozedUntil: {} });
+                if (profile.telemetrySeries) setTelemetrySeries(profile.telemetrySeries);
+                if (profile.deviceTwin) setDeviceTwin(profile.deviceTwin);
+                if (profile.firmwareState) setFirmwareState(profile.firmwareState);
+                if (profile.commandQueue) setCommandQueue(profile.commandQueue);
+                if (profile.auditLogs) setAuditLogs(profile.auditLogs);
+                setGuideAlert(null);
+                setSelectedBrewRecord(null);
+                setLastSyncAt(Date.now());
+            }, [simulationMode, simulationProfiles]);
+
+            useEffect(() => {
+                const activeIds = new Set(rawAlerts.map((alert) => alert.id));
+                setAlertState((prev) => {
+                    const nextDismissed = { ...prev.dismissed };
+                    const nextSnoozedUntil = { ...prev.snoozedUntil };
+                    let changed = false;
+
+                    Object.keys(nextDismissed).forEach((id) => {
+                        if (!activeIds.has(id)) {
+                            delete nextDismissed[id];
+                            changed = true;
+                        }
+                    });
+                    Object.keys(nextSnoozedUntil).forEach((id) => {
+                        if (!activeIds.has(id)) {
+                            delete nextSnoozedUntil[id];
+                            changed = true;
+                        }
+                    });
+
+                    if (!changed) return prev;
+                    return { dismissed: nextDismissed, snoozedUntil: nextSnoozedUntil };
+                });
+            }, [rawAlerts]);
+
+            const maintenanceCards = useMemo(() => {
+                const fallbackMaintenance = {
+                    cleaningDueAt: nowTs + 2 * 24 * 60 * 60 * 1000,
+                    descalingDueAt: nowTs + 9 * 24 * 60 * 60 * 1000,
+                    filterDueAt: nowTs + 21 * 24 * 60 * 60 * 1000
+                };
+                const maintenance = machineData.maintenance || fallbackMaintenance;
+
+                const getStatus = (dueAt) => {
+                    const diff = dueAt - nowTs;
+                    const days = Math.ceil(diff / (24 * 60 * 60 * 1000));
+                    if (diff < 0) return { label: '已超期', tone: 'critical', remainText: `超期 ${Math.abs(days)} 天` };
+                    if (days <= 2) return { label: '即将到期', tone: 'warning', remainText: `${days} 天内到期` };
+                    return { label: '正常', tone: 'normal', remainText: `剩余 ${days} 天` };
+                };
+
+                return [
+                    { key: 'cleaningDueAt', title: '清洁保养', icon: 'spray-can', ...getStatus(maintenance.cleaningDueAt) },
+                    { key: 'descalingDueAt', title: '除垢维护', icon: 'shield-alert', ...getStatus(maintenance.descalingDueAt) },
+                    { key: 'filterDueAt', title: '滤芯更换', icon: 'filter', ...getStatus(maintenance.filterDueAt) }
+                ];
+            }, [machineData.maintenance, nowTs]);
+
+            const healthStatus = useMemo(() => {
+                if (!isNodeOnline) {
+                    return {
+                        label: '设备离线',
+                        dot: 'bg-red-500',
+                        text: 'text-red-400',
+                        badge: 'bg-red-500/10 border-red-500/30 text-red-300'
+                    };
+                }
+                if (alerts.length > 0) {
+                    return {
+                        label: '在线（有告警）',
+                        dot: 'bg-amber-500',
+                        text: 'text-amber-400',
+                        badge: 'bg-amber-500/10 border-amber-500/30 text-amber-300'
+                    };
+                }
+                return {
+                    label: '在线稳定',
+                    dot: 'bg-green-500',
+                    text: 'text-green-400',
+                    badge: 'bg-green-500/10 border-green-500/30 text-green-300'
+                };
+            }, [isNodeOnline, alerts.length]);
+
+            const recentBrews = useMemo(() => {
+                if (Array.isArray(machineData.recentBrews) && machineData.recentBrews.length) {
+                    return machineData.recentBrews.slice(0, 5);
+                }
+                if (machineData.lastBrewed) {
+                    return [{
+                        id: machineData.lastBrewed,
+                        drink: machineData.selectedDrink,
+                        temp: machineData.temp,
+                        status: 'completed',
+                        at: machineData.lastBrewed
+                    }];
+                }
+                return [];
+            }, [machineData.recentBrews, machineData.lastBrewed, machineData.selectedDrink, machineData.temp]);
+
+            const getBrewPrecheckError = () => {
+                if (!isNodeOnline) return '设备离线，暂时无法下发冲煮任务。';
+                if (machineData.brewing) return '设备正在冲煮中，请稍后再试。';
+                if (machineData.water < 5) return '净水储量不足 5%，请先补水。';
+                if (machineData.selectedDrink === 'Pure Espresso' && machineData.beansA < 10) return '研磨仓 A 余量不足 10%，请先补豆。';
+                if (machineData.selectedDrink === 'Dark Americano' && machineData.beansB < 10) return '研磨仓 B 余量不足 10%，请先补豆。';
+                if (machineData.selectedDrink === 'Omega Blend' && (machineData.beansA < 8 || machineData.beansB < 8)) return 'Omega Blend 需要 A/B 仓均至少 8% 余量。';
+                return null;
+            };
+
+            const handleAlertDismiss = (alert) => {
+                setAlertState((prev) => ({
+                    ...prev,
+                    dismissed: { ...prev.dismissed, [alert.id]: true },
+                    snoozedUntil: { ...prev.snoozedUntil, [alert.id]: 0 }
+                }));
+                setGuideAlert((prev) => (prev?.id === alert.id ? null : prev));
+            };
+
+            const handleAlertSnooze = (alert, minutes = 30) => {
+                const snoozedUntil = Date.now() + minutes * 60 * 1000;
+                setAlertState((prev) => ({
+                    ...prev,
+                    snoozedUntil: { ...prev.snoozedUntil, [alert.id]: snoozedUntil }
+                }));
+                setGuideAlert((prev) => (prev?.id === alert.id ? null : prev));
+            };
+
+            const handleMaintenanceReset = async (key) => {
+                const resetDurationMap = {
+                    cleaningDueAt: 7 * 24 * 60 * 60 * 1000,
+                    descalingDueAt: 30 * 24 * 60 * 60 * 1000,
+                    filterDueAt: 60 * 24 * 60 * 60 * 1000
+                };
+                const nextDueAt = Date.now() + (resetDurationMap[key] || 7 * 24 * 60 * 60 * 1000);
+
+                setMachineData((prev) => ({
+                    ...prev,
+                    maintenance: {
+                        ...(prev.maintenance || {}),
+                        [key]: nextDueAt
+                    }
+                }));
+
+                try {
+                    await updateCloud({ [`maintenance.${key}`]: nextDueAt });
+                } catch (error) {
+                    window.alert('维护计时重置失败，请稍后重试。');
+                }
+            };
+
+            const getMaintenanceTone = (tone) => {
+                if (tone === 'critical') return 'bg-red-500/5 border-red-500/30 text-red-300';
+                if (tone === 'warning') return 'bg-amber-500/5 border-amber-500/30 text-amber-300';
+                return 'bg-green-500/5 border-green-500/30 text-green-300';
+            };
+
+            const getRecordStatusTone = (status) => {
+                if (status === 'failed') return 'text-red-300';
+                if (status === 'running') return 'text-amber-300';
+                if (status === 'queued') return 'text-blue-300';
+                return 'text-green-300';
+            };
+
+            const getCommandStatusTone = (status) => {
+                if (status === 'failed') return 'text-red-300';
+                if (status === 'running') return 'text-amber-300';
+                if (status === 'queued') return 'text-blue-300';
+                return 'text-green-300';
+            };
+
+            const triggerCommand = async (name, payload) => {
+                const now = Date.now();
+                const task = {
+                    id: now,
+                    name,
+                    payload,
+                    status: 'queued',
+                    errorCode: null,
+                    durationMs: null,
+                    createdAt: now,
+                    updatedAt: now
+                };
+                setCommandQueue(prev => [task, ...prev].slice(0, 20));
+                appendAudit('command.queue', `${name} 已入队`, 'running');
+
+                setTimeout(() => {
+                    setCommandQueue(prev => prev.map(item => item.id === task.id ? { ...item, status: 'running', updatedAt: Date.now() } : item));
+                }, 350);
+
+                setTimeout(() => {
+                    const durationMs = Math.floor(900 + Math.random() * 1800);
+                    setCommandQueue(prev => prev.map(item => item.id === task.id ? { ...item, status: 'success', durationMs, updatedAt: Date.now() } : item));
+                    appendAudit('command.success', `${name} 执行成功`, 'success');
+                }, 1900);
+
+                if (name === 'device.reboot') {
+                    setIsNodeOnline(false);
+                    setTimeout(() => setIsNodeOnline(true), 2600);
+                }
+            };
+
+            const runDiagnostics = () => {
+                if (diagnosticsState.running) return;
+                setDiagnosticsState({
+                    running: true,
+                    result: null,
+                    checks: [
+                        { key: 'network', label: '网络链路', status: 'running' },
+                        { key: 'pump', label: '泵体压力', status: 'pending' },
+                        { key: 'thermal', label: '温控回路', status: 'pending' },
+                        { key: 'sensor', label: '传感器状态', status: 'pending' }
+                    ],
+                    lastRunAt: Date.now()
+                });
+                appendAudit('diagnostics.start', '启动远程自检', 'running');
+
+                const finalize = () => {
+                    const fail = !isNodeOnline || machineDataRef.current.temp > 96;
+                    const checks = [
+                        { key: 'network', label: '网络链路', status: isNodeOnline ? 'ok' : 'failed' },
+                        { key: 'pump', label: '泵体压力', status: machineDataRef.current.water > 6 ? 'ok' : 'failed' },
+                        { key: 'thermal', label: '温控回路', status: machineDataRef.current.temp >= 88 && machineDataRef.current.temp <= 96 ? 'ok' : 'failed' },
+                        { key: 'sensor', label: '传感器状态', status: 'ok' }
+                    ];
+                    setDiagnosticsState({
+                        running: false,
+                        checks,
+                        result: fail ? 'failed' : 'passed',
+                        lastRunAt: Date.now()
+                    });
+                    appendAudit('diagnostics.finish', fail ? '远程自检发现异常' : '远程自检通过', fail ? 'warning' : 'success');
+                };
+                setTimeout(finalize, 2200);
+            };
+
+            const startFirmwareUpgrade = (mode = 'manual') => {
+                const target = firmwareState.availableVersions[0] || firmwareState.currentVersion;
+                setFirmwareState(prev => ({ ...prev, targetVersion: target, status: 'downloading' }));
+                appendAudit('firmware.start', `开始升级到 ${target} (${mode})`, 'running');
+
+                setTimeout(() => {
+                    setFirmwareState(prev => ({ ...prev, status: 'installing' }));
+                }, 1000);
+
+                setTimeout(() => {
+                    setFirmwareState(prev => ({
+                        ...prev,
+                        currentVersion: target,
+                        targetVersion: target,
+                        status: 'idle',
+                        lastUpgradeAt: Date.now(),
+                        history: [{ id: Date.now(), version: target, mode, status: 'success', at: Date.now() }, ...(prev.history || [])].slice(0, 6)
+                    }));
+                    appendAudit('firmware.success', `升级到 ${target} 成功`, 'success');
+                }, 2600);
+            };
+
+            const exportDiagnosticsPack = () => {
+                appendAudit('diagnostics.export', '导出最近24小时诊断包', 'success');
+                window.alert('诊断包已生成（模拟）：diag-pack-' + new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-') + '.zip');
+            };
+
+            const rollbackTwin = () => {
+                setDeviceTwin(prev => {
+                    const desired = { ...prev.reported };
+                    return {
+                        ...prev,
+                        desired,
+                        desiredVersion: prev.reportedVersion,
+                        updatedAt: Date.now()
+                    };
+                });
+                appendAudit('twin.rollback', '已回滚到设备上报版本', 'warning');
+            };
+
+            const publishDesiredConfig = async (patch) => {
+                setDeviceTwin(prev => {
+                    const desired = { ...prev.desired, ...patch };
+                    return {
+                        ...prev,
+                        desired,
+                        desiredVersion: prev.desiredVersion + 1,
+                        updatedAt: Date.now()
+                    };
+                });
+                appendAudit('twin.desired.update', `更新期望配置 ${Object.keys(patch).join(',')}`, 'running');
+            };
+
+            useEffect(() => {
+                if (window.lucide) window.lucide.createIcons();
+            }, [
+                alerts.length,
+                simulationMode,
+                telemetryRange,
+                commandQueue.length,
+                auditLogs.length,
+                diagnosticsState.running,
+                diagnosticsState.result,
+                firmwareState.status,
+                firmwareState.currentVersion,
+                firmwareState.targetVersion,
+                deviceTwin.desiredVersion,
+                deviceTwin.reportedVersion,
+                selectedBrewRecord?.id
+            ]);
+
+            // 1. 先认证
+            useEffect(() => {
+                const initAuth = async () => {
+                    try {
+                        const { initializeApp } = window.FB_CORE;
+                        const { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged, getFirestore } = window.FB_METHODS;
+                        const app = initializeApp(firebaseConfig);
+                        const auth = getAuth(app);
+                        const firestore = getFirestore(app);
+                        setDb(firestore);
+
+                        if (typeof window.__initial_auth_token !== 'undefined' && window.__initial_auth_token) {
+                            await signInWithCustomToken(auth, window.__initial_auth_token);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                        onAuthStateChanged(auth, setUser);
+                    } catch (err) {
+                        console.error("Auth Failed:", err);
+                        setLoading(false);
+                    }
+                };
+                initAuth();
+            }, []);
+
+            // 2. 认证后再监听数据
+            useEffect(() => {
+                if (!user || !db) return;
+                const { doc, onSnapshot, setDoc } = window.FB_METHODS;
+                const docRef = doc(db, ...DB_PATH);
+                const unsub = onSnapshot(docRef, (snap) => {
+                    if (snap.exists()) {
+                        setMachineData(prev => ({ ...prev, ...snap.data() }));
+                    } else {
+                        setDoc(docRef, machineData).catch(e => console.error(e));
+                    }
+                    const syncTs = Date.now();
+                    setIsNodeOnline(true);
+                    setLastSyncAt(syncTs);
+                    setLoading(false);
+                }, (error) => {
+                    console.error("Firestore Permission Error:", error);
+                    setIsNodeOnline(false);
+                    setLoading(false);
+                });
+                return () => unsub();
+            }, [user, db]);
+
+            const updateCloud = (f) => {
+                if (simulationMode !== 'live') return Promise.resolve();
+                if (!user || !db) return Promise.resolve();
+                const { doc, updateDoc } = window.FB_METHODS;
+                return updateDoc(doc(db, ...DB_PATH), f).catch(e => {
+                    console.error(e);
+                    throw e;
+                });
+            };
+
+            const handleBrewTask = async () => {
+                const precheckError = getBrewPrecheckError();
+                if (precheckError) {
+                    window.alert(precheckError);
+                    return;
+                }
+
+                const confirmed = window.confirm(`确认下发冲煮任务？\n配方：${machineData.selectedDrink}\n目标温度：${machineData.temp}°C`);
+                if (!confirmed) return;
+
+                const now = Date.now();
+                const nextRecord = {
+                    id: now,
+                    drink: machineData.selectedDrink,
+                    temp: machineData.temp,
+                    status: 'queued',
+                    at: now
+                };
+                const nextRecentBrews = [nextRecord, ...(Array.isArray(machineData.recentBrews) ? machineData.recentBrews : [])].slice(0, 5);
+
+                await triggerCommand('brew.start', { recipe: machineData.selectedDrink, temp: machineData.temp });
+                appendAudit('brew.task.submit', `下发 ${machineData.selectedDrink} @${machineData.temp}°C`, 'success');
+
+                setIsSubmittingBrew(true);
+                try {
+                    await updateCloud({
+                        brewing: true,
+                        progress: 0,
+                        powerLoad: 2.15,
+                        lastBrewed: now,
+                        recentBrews: nextRecentBrews
+                    });
+                    publishDesiredConfig({ temp: machineData.temp, selectedDrink: machineData.selectedDrink });
+                } catch (error) {
+                    window.alert('任务下发失败，请稍后重试。');
+                    appendAudit('brew.task.submit', '任务下发失败', 'critical');
+                } finally {
+                    setIsSubmittingBrew(false);
+                }
+            };
+
+            if (loading) return (
+                <div className="min-h-screen bg-[#050505] flex flex-col items-center justify-center text-amber-500 font-mono italic">
+                    <div className="w-12 h-12 border-2 border-amber-500/20 border-t-amber-500 rounded-full animate-spin mb-4" />
+                    BOOTING IoT SYSTEM...
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen p-4 lg:p-8 flex flex-col h-screen">
+                    <header className="mb-6 border-b border-white/5 pb-6 shrink-0">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 bg-amber-600 rounded-xl flex items-center justify-center text-black">
+                                    <i data-lucide="zap" className="w-6 h-6"></i>
+                                </div>
+                                <div>
+                                    <h1 className="text-xl font-black italic tracking-tighter text-white">KIRA OMEGA <span className="text-amber-500 text-xs not-italic ml-1 uppercase">X-Ray Control</span></h1>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        <span className={`w-1.5 h-1.5 rounded-full ${healthStatus.dot} ${isNodeOnline ? 'animate-pulse' : ''}`}></span>
+                                        <span className={`text-[9px] uppercase font-black tracking-widest italic ${healthStatus.text}`}>{healthStatus.label}</span>
+                                        <span className={`px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-widest ${healthStatus.badge}`}>{alerts.length} 告警</span>
+                                        <span className="text-[9px] uppercase font-black text-gray-600 tracking-widest italic">
+                                            LAST_SYNC {lastSyncAt ? new Date(lastSyncAt).toLocaleTimeString() : 'N/A'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setIsXRay(!isXRay)}
+                                className={`px-4 py-2 rounded-xl border text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 ${isXRay ? 'bg-amber-600 border-amber-500 text-black shadow-[0_0_20px_rgba(217,119,6,0.3)]' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                            >
+                                <i data-lucide="cpu" className="w-3.5 h-3.5"></i>
+                                {isXRay ? '退出透视模式' : '开启内部透视'}
+                            </button>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {alerts.length === 0 ? (
+                                <div className="bg-green-500/5 border border-green-500/20 rounded-2xl p-4 flex items-start justify-between">
+                                    <div>
+                                        <div className="text-[10px] font-black uppercase tracking-widest text-green-300">当前无告警</div>
+                                        <p className="text-[11px] text-green-200/80 mt-1">设备状态稳定，可正常下发任务。</p>
+                                    </div>
+                                    <i data-lucide="shield-check" className="w-4 h-4 text-green-300"></i>
+                                </div>
+                            ) : (
+                                alerts.slice(0, 2).map(alert => (
+                                    <div key={alert.id} className={`rounded-2xl p-4 border ${alert.level === 'critical' ? 'bg-red-500/5 border-red-500/30' : 'bg-amber-500/5 border-amber-500/30'}`}>
+                                        <div className="flex justify-between items-start gap-3">
+                                            <div>
+                                                <div className={`text-[10px] font-black uppercase tracking-widest ${alert.level === 'critical' ? 'text-red-300' : 'text-amber-300'}`}>{alert.title}</div>
+                                                <p className="text-[11px] text-gray-300 mt-1">{alert.desc}</p>
+                                                <p className="text-[10px] text-gray-500 mt-2">{alert.action}</p>
+                                            </div>
+                                            <i data-lucide={alert.level === 'critical' ? 'alert-triangle' : 'bell-ring'} className={`w-4 h-4 mt-0.5 ${alert.level === 'critical' ? 'text-red-300' : 'text-amber-300'}`}></i>
+                                        </div>
+
+                                        <div className="mt-3 flex flex-wrap gap-2">
+                                            <button
+                                                onClick={() => setGuideAlert(alert)}
+                                                className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-white/15 text-gray-300 hover:bg-white/10"
+                                            >
+                                                查看指引
+                                            </button>
+                                            <button
+                                                onClick={() => handleAlertSnooze(alert, 30)}
+                                                className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-amber-500/40 text-amber-200 hover:bg-amber-500/10"
+                                            >
+                                                稍后提醒
+                                            </button>
+                                            <button
+                                                onClick={() => handleAlertDismiss(alert)}
+                                                className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-green-500/40 text-green-200 hover:bg-green-500/10"
+                                            >
+                                                已处理
+                                            </button>
+                                        </div>
+
+                                        {guideAlert?.id === alert.id && (
+                                            <div className="mt-3 p-3 rounded-xl border border-white/10 bg-white/5">
+                                                <div className="text-[9px] text-gray-500 uppercase tracking-widest font-black">处理指引</div>
+                                                <p className="mt-1 text-[10px] text-gray-300 leading-relaxed">{alert.guide}</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                            <span className="text-[9px] uppercase font-black text-gray-600 tracking-widest">状态模拟</span>
+                            {[
+                                { id: 'live', label: '实时数据' },
+                                { id: 'all_normal', label: '全部正常' },
+                                { id: 'warning_alerts', label: '包含告警' },
+                                { id: 'critical_offline', label: '离线故障' },
+                                { id: 'brewing_running', label: '冲煮进行中' }
+                            ].map((mode) => (
+                                <button
+                                    key={mode.id}
+                                    onClick={() => setSimulationMode(mode.id)}
+                                    className={`px-3 py-1.5 rounded-lg border text-[9px] font-black uppercase tracking-widest transition-colors ${simulationMode === mode.id ? 'bg-amber-600/20 border-amber-500/40 text-amber-300' : 'bg-white/5 border-white/10 text-gray-400 hover:bg-white/10'}`}
+                                >
+                                    {mode.label}
+                                </button>
+                            ))}
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+                            <div className="bg-neutral-900/40 border border-white/10 rounded-2xl p-3">
+                                <div className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-2">设备孪生状态</div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="text-[10px] text-gray-400">Desired v{deviceTwin.desiredVersion}</span>
+                                    <span className="text-[10px] text-gray-500">Reported v{deviceTwin.reportedVersion}</span>
+                                </div>
+                                <div className={`text-[10px] font-black uppercase tracking-widest ${driftDetected ? 'text-amber-300' : 'text-green-300'}`}>
+                                    {driftDetected ? '配置漂移' : '配置一致'}
+                                </div>
+                                <div className="mt-2 flex gap-2">
+                                    <button onClick={() => publishDesiredConfig({ temp: machineData.temp })} className="px-2 py-1 rounded-lg text-[9px] border border-white/15 text-gray-300 hover:bg-white/10">发布期望</button>
+                                    <button onClick={rollbackTwin} className="px-2 py-1 rounded-lg text-[9px] border border-amber-500/30 text-amber-300 hover:bg-amber-500/10">回滚基线</button>
+                                </div>
+                            </div>
+
+                            <div className="bg-neutral-900/40 border border-white/10 rounded-2xl p-3">
+                                <div className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-2">固件状态</div>
+                                <div className="text-[10px] text-gray-300">当前 {firmwareState.currentVersion} → 目标 {firmwareState.targetVersion}</div>
+                                <div className="text-[10px] mt-1 uppercase font-black tracking-widest text-amber-300">{firmwareState.status}</div>
+                                <div className="mt-2 flex gap-2">
+                                    <button onClick={() => startFirmwareUpgrade('manual')} className="px-2 py-1 rounded-lg text-[9px] border border-white/15 text-gray-300 hover:bg-white/10">立即升级</button>
+                                    <button onClick={() => startFirmwareUpgrade('scheduled')} className="px-2 py-1 rounded-lg text-[9px] border border-blue-500/30 text-blue-300 hover:bg-blue-500/10">定时升级</button>
+                                </div>
+                            </div>
+
+                            <div className="bg-neutral-900/40 border border-white/10 rounded-2xl p-3">
+                                <div className="text-[9px] font-black uppercase tracking-widest text-gray-500 mb-2">远程诊断</div>
+                                <div className={`text-[10px] font-black uppercase tracking-widest ${diagnosticsState.result === 'failed' ? 'text-red-300' : diagnosticsState.result === 'passed' ? 'text-green-300' : 'text-gray-400'}`}>
+                                    {diagnosticsState.running ? '运行中' : diagnosticsState.result === 'failed' ? '发现异常' : diagnosticsState.result === 'passed' ? '检查通过' : '未执行'}
+                                </div>
+                                <div className="mt-2 flex gap-2">
+                                    <button onClick={runDiagnostics} className="px-2 py-1 rounded-lg text-[9px] border border-white/15 text-gray-300 hover:bg-white/10">一键自检</button>
+                                    <button onClick={exportDiagnosticsPack} className="px-2 py-1 rounded-lg text-[9px] border border-green-500/30 text-green-300 hover:bg-green-500/10">导出诊断包</button>
+                                </div>
+                            </div>
+                        </div>
+                    </header>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0">
+                        <div className="lg:col-span-8 relative flex flex-col min-h-0">
+                            <div className="flex-1 relative bg-neutral-900/40 rounded-[2.5rem] border border-white/5 shadow-2xl overflow-hidden mb-6">
+                                <div className="absolute right-4 top-4 z-40 flex flex-col gap-2">
+                                    <button
+                                        onClick={() => window.dispatchEvent(new CustomEvent('coffee-model-zoom-in'))}
+                                        className="w-8 h-8 rounded-lg border border-white/15 bg-black/40 text-white text-lg leading-none hover:bg-white/10"
+                                        title="放大"
+                                    >
+                                        +
+                                    </button>
+                                    <button
+                                        onClick={() => window.dispatchEvent(new CustomEvent('coffee-model-zoom-out'))}
+                                        className="w-8 h-8 rounded-lg border border-white/15 bg-black/40 text-white text-lg leading-none hover:bg-white/10"
+                                        title="缩小"
+                                    >
+                                        −
+                                    </button>
+                                </div>
+                                <CoffeeMachine3D
+                                    brewing={machineData.brewing}
+                                    onPartClick={setActivePart}
+                                    selectedPartLabel={activePart?.label}
+                                    isXRay={isXRay}
+                                    machineData={machineData}
+                                />
+
+                                {activePart && (
+                                    <div className="absolute z-50 pointer-events-none transition-all duration-300"
+                                         style={{ left: activePart.x + 20, top: activePart.y + 20 }}>
+                                        <div className="glass-card p-5 rounded-2xl w-64 shadow-2xl animate-in fade-in zoom-in-95">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <div className="w-2 h-2 bg-amber-500 rounded-full animate-pulse shadow-[0_0_8px_#d97706]" />
+                                                <h4 className="text-[11px] font-black text-white uppercase tracking-widest">{activePart.label}</h4>
+                                            </div>
+                                            
+                                            {activePart.type === 'hopper' ? (
+                                                <div className="space-y-2 mt-3">
+                                                    <div className="flex justify-between items-center bg-white/5 p-2.5 rounded-xl border border-white/5">
+                                                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">实时余量</span>
+                                                        <span className="text-sm font-mono text-amber-500">{activePart.id === 'A' ? machineData.beansA : machineData.beansB}%</span>
+                                                    </div>
+                                                    <div className="flex justify-between items-center bg-white/5 p-2.5 rounded-xl border border-white/5">
+                                                        <span className="text-[9px] text-gray-500 font-bold uppercase tracking-widest">豆种信息</span>
+                                                        <span className="text-[9px] font-mono text-white truncate max-w-[100px]">{activePart.detail.bean}</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <p className="text-[10px] text-gray-400 leading-relaxed my-3">{activePart.description}</p>
+                                            )}
+
+                                            <div className="pt-2 mt-3 border-t border-white/5 flex justify-between text-[9px] font-bold uppercase text-amber-600/70">
+                                                <span>COMPONENT: {activePart.type.toUpperCase()}</span>
+                                                <span className="flex items-center gap-1"><i data-lucide="check" className="w-3 h-3 text-green-500"></i> 在线</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {machineData.brewing && (
+                                    <div className="absolute inset-x-0 bottom-0 p-10 bg-gradient-to-t from-black/95 to-transparent">
+                                        <div className="flex justify-between text-[11px] font-black mb-3 text-amber-500 uppercase tracking-widest">
+                                            <span className="animate-pulse">Active Extraction Cycle</span>
+                                            <span className="text-white">{machineData.progress}%</span>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-white/5 rounded-full overflow-hidden">
+                                            <div className="h-full bg-amber-600 transition-all duration-300 shadow-[0_0_20px_#d97706]" style={{ width: `${machineData.progress}%` }} />
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* 底部面板 */}
+                            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 shrink-0 pb-2">
+                                <div className="bg-white/5 p-5 rounded-[2rem] border border-white/5 flex flex-col items-center justify-center relative overflow-hidden group">
+                                    <div className="relative mb-3 energy-ring">
+                                        <svg className="w-14 h-14 transform -rotate-90">
+                                            <circle cx="28" cy="28" r="24" stroke="currentColor" strokeWidth="2" fill="transparent" className="text-white/5" />
+                                            <circle cx="28" cy="28" r="24" stroke="currentColor" strokeWidth="3" fill="transparent" 
+                                                strokeDasharray={150} strokeDashoffset={150 - (150 * (machineData.powerLoad / 3))}
+                                                className="text-amber-500" strokeLinecap="round" />
+                                        </svg>
+                                        <i data-lucide="zap" className={`absolute inset-0 m-auto w-4 h-4 text-amber-500 ${machineData.brewing ? 'animate-bounce' : ''}`}></i>
+                                    </div>
+                                    <div className="text-lg font-black">{machineData.powerLoad.toFixed(2)}<span className="text-[10px] ml-0.5 text-gray-500 font-black tracking-tighter uppercase">kW</span></div>
+                                    <div className="text-[8px] text-gray-600 uppercase tracking-widest font-black">能效负载</div>
+                                </div>
+
+                                {[
+                                    { label: '研磨仓 A', val: machineData.beansA + '%', icon: 'coffee', color: 'text-amber-600' },
+                                    { label: '研磨仓 B', val: machineData.beansB + '%', icon: 'coffee', color: 'text-amber-900' },
+                                    { label: '净水储量', val: machineData.water + '%', icon: 'droplets', color: 'text-blue-400' },
+                                    { label: '核心温度', val: machineData.temp + '°C', icon: 'thermometer', color: 'text-red-500' },
+                                ].map(item => (
+                                    <div key={item.label} className="bg-white/5 p-5 rounded-[2rem] border border-white/5 flex flex-col items-center justify-center group hover:bg-white/10 transition-colors">
+                                        <i data-lucide={item.icon} className={`w-5 h-5 ${item.color} mb-3 group-hover:scale-110 transition-transform`}></i>
+                                        <div className="text-lg font-black text-white">{item.val}</div>
+                                        <div className="text-[8px] text-gray-600 uppercase tracking-widest font-black mt-1">{item.label}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="lg:col-span-4 space-y-6 min-h-0 overflow-y-auto pr-1">
+                            <div className="bg-neutral-900/30 p-6 rounded-[2rem] border border-white/5">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-widest flex items-center gap-2 italic">
+                                        <i data-lucide="line-chart" className="w-3.5 h-3.5 text-emerald-400"></i> 遥测趋势
+                                    </h3>
+                                    <div className="flex gap-2">
+                                        {['1h', '24h'].map((range) => (
+                                            <button
+                                                key={range}
+                                                onClick={() => setTelemetryRange(range)}
+                                                className={`px-2 py-1 rounded-lg text-[9px] border uppercase tracking-widest font-black ${telemetryRange === range ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' : 'bg-white/5 border-white/10 text-gray-400'}`}
+                                            >
+                                                {range}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    {[
+                                        { key: 'temp', label: '温度 °C', color: '#f87171', min: 84, max: 102 },
+                                        { key: 'power', label: '功耗 kW', color: '#f59e0b', min: 0, max: 3 },
+                                        { key: 'water', label: '水量 %', color: '#60a5fa', min: 0, max: 100 }
+                                    ].map(metric => {
+                                        const data = telemetryWindowed[metric.key] || [];
+                                        const path = toSpark(data, metric.min, metric.max);
+                                        const latest = data.length ? data[data.length - 1].v : '--';
+                                        return (
+                                            <div key={metric.key} className="bg-white/5 border border-white/5 rounded-xl p-3">
+                                                <div className="flex justify-between text-[10px] mb-2">
+                                                    <span className="font-black text-gray-300 uppercase tracking-widest">{metric.label}</span>
+                                                    <span className="text-white font-mono">{latest}</span>
+                                                </div>
+                                                <svg viewBox="0 0 160 42" className="w-full h-12">
+                                                    <path d={path} fill="none" stroke={metric.color} strokeWidth="2" strokeLinecap="round" />
+                                                </svg>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+
+                            <div className="bg-neutral-900/30 p-6 rounded-[2rem] border border-white/5">
+                                <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-4 flex items-center gap-2 italic">
+                                    <i data-lucide="terminal" className="w-3.5 h-3.5 text-blue-400"></i> 命令执行中心
+                                </h3>
+                                <div className="grid grid-cols-2 gap-2 mb-3">
+                                    <button onClick={() => triggerCommand('device.reboot', {})} className="px-2 py-2 rounded-lg text-[9px] border border-white/15 text-gray-300 hover:bg-white/10">重启设备</button>
+                                    <button onClick={() => triggerCommand('maintenance.rinse', { level: 'quick' })} className="px-2 py-2 rounded-lg text-[9px] border border-white/15 text-gray-300 hover:bg-white/10">快速冲洗</button>
+                                </div>
+                                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                                    {commandQueue.slice(0, 10).map((cmd) => (
+                                        <div key={cmd.id} className="bg-white/5 border border-white/5 rounded-lg p-2">
+                                            <div className="flex justify-between text-[10px]">
+                                                <span className="text-gray-200 font-black uppercase tracking-wide">{cmd.name}</span>
+                                                <span className={`font-black uppercase ${getCommandStatusTone(cmd.status)}`}>{cmd.status}</span>
+                                            </div>
+                                            <div className="text-[9px] text-gray-500 mt-1">
+                                                {cmd.errorCode ? `ERR ${cmd.errorCode}` : `耗时 ${cmd.durationMs ?? '--'}ms`} · {new Date(cmd.createdAt).toLocaleTimeString()}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="bg-neutral-900/30 p-6 rounded-[2rem] border border-white/5">
+                                <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-4 flex items-center gap-2 italic">
+                                    <i data-lucide="clipboard-list" className="w-3.5 h-3.5 text-purple-400"></i> 审计日志
+                                </h3>
+                                <div className="space-y-2 max-h-44 overflow-y-auto pr-1">
+                                    {auditLogs.slice(0, 12).map((log) => (
+                                        <div key={log.id} className="bg-white/5 border border-white/5 rounded-lg p-2.5">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[10px] text-gray-200 font-black uppercase tracking-wide">{log.action}</span>
+                                                <span className={`text-[9px] uppercase font-black ${log.status === 'critical' ? 'text-red-300' : log.status === 'warning' ? 'text-amber-300' : log.status === 'running' ? 'text-blue-300' : 'text-green-300'}`}>{log.status}</span>
+                                            </div>
+                                            <div className="text-[9px] text-gray-500 mt-1">{log.actor} · {log.detail} · {new Date(log.at).toLocaleTimeString()}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* 右侧：策略控制 */}
+
+                            <section className="bg-white/5 rounded-[2.5rem] p-7 border border-white/10 shadow-2xl">
+                                <h2 className="text-[11px] font-black text-gray-400 uppercase tracking-[0.3em] flex items-center gap-2 mb-8 italic">
+                                    <i data-lucide="settings" className="w-4 h-4 text-amber-500"></i> 系统策略中心
+                                </h2>
+                                
+                                <div className="space-y-10">
+                                    <div className="space-y-4">
+                                        <div className="flex justify-between text-[10px] font-black uppercase italic tracking-[0.2em]">
+                                            <span className="text-gray-500">云端萃取策略热度</span>
+                                            <span className="text-amber-500 text-sm font-black">{machineData.temp}°C</span>
+                                        </div>
+                                        <div className="relative h-1.5 w-full bg-neutral-800 rounded-full">
+                                            <div className="absolute h-full bg-amber-600 rounded-full shadow-[0_0_10px_#d97706]" style={{ width: `${(machineData.temp - 85) / 13 * 100}%` }} />
+                                            <input type="range" min="85" max="98" value={machineData.temp}
+                                                onChange={(e) => updateCloud({ temp: parseInt(e.target.value) }).catch(() => {})}
+                                                className="absolute inset-0 w-full opacity-0 cursor-pointer" />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-3">
+                                        <div className="text-[9px] font-black text-gray-600 uppercase mb-2 tracking-widest flex items-center gap-2 italic">
+                                            <i data-lucide="globe" className="w-3.5 h-3.5"></i> 智能混合配方预设
+                                        </div>
+                                        {[
+                                            { name: 'Pure Espresso', desc: '单仓 A 研磨' },
+                                            { name: 'Omega Blend', desc: 'A/B 料仓 50/50 混合' },
+                                            { name: 'Dark Americano', desc: '单仓 B 研磨' }
+                                        ].map(drink => (
+                                            <button key={drink.name} onClick={() => updateCloud({ selectedDrink: drink.name }).catch(() => {})}
+                                                className={`group text-left p-5 rounded-2xl transition-all border-2 ${machineData.selectedDrink === drink.name ? 'bg-amber-600/5 border-amber-600/60 text-amber-500 shadow-lg shadow-amber-900/10' : 'bg-white/5 border-transparent text-gray-500 hover:bg-white/10'}`}>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-[11px] font-black uppercase tracking-widest italic">{drink.name}</span>
+                                                    {machineData.selectedDrink === drink.name && <div className="w-1.5 h-1.5 bg-amber-500 rounded-full shadow-[0_0_8px_#d97706]" />}
+                                                </div>
+                                                <div className="text-[9px] text-gray-600 group-hover:text-gray-400 font-bold uppercase tracking-tighter leading-tight">{drink.desc}</div>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {(() => {
+                                    const brewPrecheckError = getBrewPrecheckError();
+                                    return (
+                                        <>
+                                            {brewPrecheckError && (
+                                                <div className="mt-6 bg-red-500/5 border border-red-500/30 rounded-2xl p-4">
+                                                    <div className="flex items-start gap-2">
+                                                        <i data-lucide="alert-triangle" className="w-4 h-4 text-red-300 mt-0.5"></i>
+                                                        <div>
+                                                            <div className="text-[10px] font-black uppercase tracking-widest text-red-300">任务前置校验未通过</div>
+                                                            <p className="text-[11px] text-red-200/80 mt-1">{brewPrecheckError}</p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            <button onClick={handleBrewTask}
+                                                disabled={Boolean(brewPrecheckError) || isSubmittingBrew}
+                                                className="w-full mt-6 py-5 bg-amber-600 hover:bg-amber-500 disabled:opacity-20 text-black font-black text-[11px] uppercase tracking-[0.25em] rounded-3xl flex items-center justify-center gap-3 transition-all active:scale-95 shadow-xl shadow-amber-900/30">
+                                                <i data-lucide="play" className="w-4 h-4 fill-current"></i>
+                                                {isSubmittingBrew ? '任务下发中...' : '下发实时冲煮任务'}
+                                            </button>
+                                        </>
+                                    );
+                                })()}
+                            </section>
+
+                            <div className="bg-neutral-900/30 p-6 rounded-[2rem] border border-white/5">
+                                <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-4 flex items-center gap-2 italic">
+                                    <i data-lucide="history" className="w-3.5 h-3.5 text-blue-500"></i> 最近冲煮记录
+                                </h3>
+                                <div className="space-y-3">
+                                    {recentBrews.length === 0 ? (
+                                        <div className="text-[10px] text-gray-500">暂无记录</div>
+                                    ) : (
+                                        recentBrews.map((record) => (
+                                            <button
+                                                key={record.id}
+                                                onClick={() => setSelectedBrewRecord(record)}
+                                                className="w-full text-left bg-white/5 border border-white/5 rounded-xl p-3 hover:bg-white/10 transition-colors"
+                                            >
+                                                <div className="flex justify-between items-center text-[10px]">
+                                                    <span className="font-black text-white uppercase tracking-wider">{record.drink || 'Unknown'}</span>
+                                                    <span className="text-gray-500">{record.at ? new Date(record.at).toLocaleTimeString() : 'N/A'}</span>
+                                                </div>
+                                                <div className="mt-1 flex justify-between text-[9px] uppercase tracking-wide">
+                                                    <span className="text-gray-500">TEMP {record.temp ?? '--'}°C</span>
+                                                    <span className={getRecordStatusTone(record.status || 'completed')}>STATUS {(record.status || 'completed').toUpperCase()}</span>
+                                                </div>
+                                            </button>
+                                        ))
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="bg-neutral-900/30 p-6 rounded-[2rem] border border-white/5">
+                                <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-4 flex items-center gap-2 italic">
+                                    <i data-lucide="wrench" className="w-3.5 h-3.5 text-amber-500"></i> 维护提醒中心
+                                </h3>
+                                <div className="space-y-3">
+                                    {maintenanceCards.map((card) => (
+                                        <div key={card.key} className="bg-white/5 border border-white/5 rounded-xl p-3">
+                                            <div className="flex justify-between items-center">
+                                                <div className="flex items-center gap-2">
+                                                    <i data-lucide={card.icon} className="w-4 h-4 text-gray-300"></i>
+                                                    <span className="text-[10px] font-black text-white uppercase tracking-wider">{card.title}</span>
+                                                </div>
+                                                <span className={`px-2 py-0.5 rounded-full border text-[8px] font-black uppercase tracking-widest ${getMaintenanceTone(card.tone)}`}>{card.label}</span>
+                                            </div>
+                                            <div className="mt-2 flex justify-between items-center">
+                                                <span className="text-[10px] text-gray-500">{card.remainText}</span>
+                                                <button
+                                                    onClick={() => handleMaintenanceReset(card.key)}
+                                                    className="px-2.5 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest border border-white/15 text-gray-300 hover:bg-white/10"
+                                                >
+                                                    完成并重置
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="bg-neutral-900/30 p-6 rounded-[2rem] border border-white/5">
+                                <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-4 flex items-center gap-2 italic">
+                                    <i data-lucide="activity" className="w-3.5 h-3.5 text-blue-500"></i> 系统节点日志
+                                </h3>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-[9px] font-mono">
+                                        <span className="text-gray-600">LAST_SYNC:</span>
+                                        <span className="text-gray-400">{lastSyncAt ? new Date(lastSyncAt).toLocaleTimeString() : 'INITIALIZING'}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[9px] font-mono">
+                                        <span className="text-gray-600">NODE_STATUS:</span>
+                                        <span className={isNodeOnline ? 'text-green-400' : 'text-red-400'}>{isNodeOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                                    </div>
+                                    <div className="flex justify-between text-[9px] font-mono">
+                                        <span className="text-gray-600">IP_ADDR:</span>
+                                        <span className="text-gray-400">192.168.1.144</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-neutral-900/30 p-6 rounded-[2rem] border border-white/5">
+                                <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-4 flex items-center gap-2 italic">
+                                    <i data-lucide="cpu" className="w-3.5 h-3.5 text-cyan-400"></i> 设备孪生详情
+                                </h3>
+                                <div className="space-y-2 text-[10px]">
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">期望配置</span>
+                                        <span className="text-gray-300 font-mono">v{deviceTwin.desiredVersion}</span>
+                                    </div>
+                                    <div className="flex justify-between">
+                                        <span className="text-gray-500">设备上报</span>
+                                        <span className="text-gray-300 font-mono">v{deviceTwin.reportedVersion}</span>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/5 rounded-xl p-3">
+                                        <div className="text-[9px] text-gray-500 uppercase tracking-widest">DESIRED</div>
+                                        <div className="mt-1 text-[10px] text-gray-300 font-mono">TEMP {deviceTwin.desired.temp}°C · {deviceTwin.desired.selectedDrink}</div>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/5 rounded-xl p-3">
+                                        <div className="text-[9px] text-gray-500 uppercase tracking-widest">REPORTED</div>
+                                        <div className="mt-1 text-[10px] text-gray-300 font-mono">TEMP {deviceTwin.reported.temp}°C · {deviceTwin.reported.selectedDrink}</div>
+                                    </div>
+                                    <div className={`text-[10px] font-black uppercase tracking-widest ${driftDetected ? 'text-amber-300' : 'text-green-300'}`}>
+                                        {driftDetected ? '存在配置漂移' : '配置一致'}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-neutral-900/30 p-6 rounded-[2rem] border border-white/5">
+                                <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-4 flex items-center gap-2 italic">
+                                    <i data-lucide="download-cloud" className="w-3.5 h-3.5 text-indigo-400"></i> 固件管理
+                                </h3>
+                                <div className="space-y-3">
+                                    <div className="bg-white/5 border border-white/5 rounded-xl p-3">
+                                        <div className="flex justify-between text-[10px]">
+                                            <span className="text-gray-500">当前版本</span>
+                                            <span className="text-white font-mono">{firmwareState.currentVersion}</span>
+                                        </div>
+                                        <div className="flex justify-between text-[10px] mt-1">
+                                            <span className="text-gray-500">目标版本</span>
+                                            <span className="text-gray-300 font-mono">{firmwareState.targetVersion}</span>
+                                        </div>
+                                        <div className="text-[10px] mt-2 uppercase font-black tracking-widest text-amber-300">{firmwareState.status}</div>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {(firmwareState.history || []).slice(0, 4).map((item) => (
+                                            <div key={item.id} className="bg-white/5 border border-white/5 rounded-xl p-2.5 text-[9px] text-gray-400">
+                                                {item.version} · {item.mode} · {item.status} · {new Date(item.at).toLocaleDateString()}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="bg-neutral-900/30 p-6 rounded-[2rem] border border-white/5">
+                                <h3 className="text-[9px] font-black text-gray-600 uppercase tracking-widest mb-4 flex items-center gap-2 italic">
+                                    <i data-lucide="stethoscope" className="w-3.5 h-3.5 text-emerald-400"></i> 远程诊断结果
+                                </h3>
+                                <div className="space-y-2">
+                                    {diagnosticsState.checks.length === 0 ? (
+                                        <div className="text-[10px] text-gray-500">暂无诊断记录</div>
+                                    ) : diagnosticsState.checks.map((check) => (
+                                        <div key={check.key} className="flex items-center justify-between bg-white/5 border border-white/5 rounded-xl px-3 py-2">
+                                            <span className="text-[10px] text-gray-300">{check.label}</span>
+                                            <span className={`text-[9px] uppercase font-black ${check.status === 'ok' ? 'text-green-300' : check.status === 'failed' ? 'text-red-300' : 'text-amber-300'}`}>{check.status}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {selectedBrewRecord && (
+                        <div className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-sm flex justify-end">
+                            <div className="w-full max-w-md h-full bg-[#0f0f0f] border-l border-white/10 p-6 overflow-y-auto">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-sm font-black uppercase tracking-widest text-white">冲煮记录详情</h3>
+                                    <button
+                                        onClick={() => setSelectedBrewRecord(null)}
+                                        className="px-3 py-1.5 rounded-lg border border-white/15 text-[10px] font-black uppercase tracking-widest text-gray-300 hover:bg-white/10"
+                                    >
+                                        关闭
+                                    </button>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                        <div className="text-[9px] text-gray-500 uppercase tracking-widest font-black">配方</div>
+                                        <div className="text-sm text-white font-black mt-1 uppercase">{selectedBrewRecord.drink || 'Unknown'}</div>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                        <div className="text-[9px] text-gray-500 uppercase tracking-widest font-black">温度</div>
+                                        <div className="text-sm text-white font-black mt-1">{selectedBrewRecord.temp ?? '--'}°C</div>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                        <div className="text-[9px] text-gray-500 uppercase tracking-widest font-black">状态</div>
+                                        <div className={`text-sm font-black mt-1 uppercase ${getRecordStatusTone(selectedBrewRecord.status || 'completed')}`}>
+                                            {selectedBrewRecord.status || 'completed'}
+                                        </div>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                        <div className="text-[9px] text-gray-500 uppercase tracking-widest font-black">时间</div>
+                                        <div className="text-sm text-white font-black mt-1">{selectedBrewRecord.at ? new Date(selectedBrewRecord.at).toLocaleString() : 'N/A'}</div>
+                                    </div>
+                                    <div className="bg-white/5 border border-white/10 rounded-xl p-4">
+                                        <div className="text-[9px] text-gray-500 uppercase tracking-widest font-black">执行说明</div>
+                                        <p className="text-[11px] text-gray-300 mt-1 leading-relaxed">
+                                            {selectedBrewRecord.status === 'failed'
+                                                ? '本次任务执行失败，请检查告警区建议并重试。'
+                                                : selectedBrewRecord.status === 'queued'
+                                                    ? '任务已入队，等待设备执行。'
+                                                    : selectedBrewRecord.status === 'running'
+                                                        ? '任务执行中，请关注进度条。'
+                                                        : '任务已完成，可复用该参数作为下次模板。'}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+
+        const initIcons = () => { if (window.lucide) window.lucide.createIcons(); };
+        setTimeout(initIcons, 800);
+        const os = window.setTimeout;
+        window.setTimeout = function(f, d) {
+            if (d === 500 || d === 800) { const w = () => { f(); initIcons(); }; return os(w, d); }
+            return os(f, d);
+        };
+    </script>
+</body>
+</html>

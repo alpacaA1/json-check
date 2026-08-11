@@ -1,0 +1,3333 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>茶饮机设备详情</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <style>
+        :root {
+            --bg: #f3f4f6;
+            --panel: #ffffff;
+            --panel-muted: #f8fafc;
+            --line-soft: #e5e7eb;
+            --line-mid: #d1d5db;
+            --text-strong: #0f172a;
+            --text-main: #334155;
+            --text-soft: #64748b;
+            --accent: #2563eb;
+            --accent-soft: #dbeafe;
+            --success: #15803d;
+            --success-soft: #dcfce7;
+            --warning: #b45309;
+            --warning-soft: #fef3c7;
+            --danger: #b91c1c;
+            --danger-soft: #fee2e2;
+            --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            min-height: 100%;
+        }
+
+        body {
+            margin: 0;
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            overflow-x: hidden;
+        }
+
+        body::before {
+            display: none;
+        }
+
+        .font-display {
+            font-family: inherit;
+            letter-spacing: 0;
+            font-weight: 600;
+        }
+
+        .font-mono {
+            font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+
+        .console-shell {
+            position: relative;
+        }
+
+        .console-panel {
+            background: var(--panel);
+            border: 1px solid var(--line-soft);
+            border-radius: 16px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .console-panel-dark {
+            background: var(--panel-muted);
+        }
+
+        .soft-plate {
+            background: var(--panel-muted);
+            border: 1px solid var(--line-soft);
+            border-radius: 12px;
+        }
+
+        .status-rail {
+            background: var(--panel);
+        }
+
+        .scan-surface::before {
+            display: none;
+        }
+
+        .glow-ring {
+            position: relative;
+        }
+
+        .glow-ring::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 120ms ease;
+            border: 1px solid var(--accent);
+        }
+
+        .glow-ring.active::after {
+            opacity: 1;
+        }
+
+        .online-dot,
+        .state-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 999px;
+            flex: 0 0 auto;
+        }
+
+        .online-dot::after,
+        .state-dot::after {
+            display: none;
+        }
+
+        .tone-success {
+            background: var(--success);
+        }
+
+        .tone-success::after {
+            background: var(--success);
+        }
+
+        .tone-warning {
+            background: var(--warning);
+        }
+
+        .tone-warning::after {
+            background: var(--warning);
+        }
+
+        .tone-danger {
+            background: var(--danger);
+        }
+
+        .tone-danger::after {
+            background: var(--danger);
+        }
+
+        .tone-accent {
+            background: var(--accent);
+        }
+
+        .tone-accent::after {
+            background: var(--accent);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 11px;
+            line-height: 1;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+
+        .status-badge.success {
+            background: var(--success-soft);
+            color: var(--success);
+        }
+
+        .status-badge.warning {
+            background: var(--warning-soft);
+            color: var(--warning);
+        }
+
+        .status-badge.danger {
+            background: var(--danger-soft);
+            color: var(--danger);
+        }
+
+        .status-badge.neutral {
+            background: var(--accent-soft);
+            color: var(--accent);
+        }
+
+        .signal-line {
+            position: relative;
+        }
+
+        .signal-line::before {
+            display: none;
+        }
+
+        .rail-item {
+            padding: 12px 14px 10px;
+            border-radius: 12px;
+            background: var(--panel-muted);
+            border: 1px solid var(--line-soft);
+            min-height: 74px;
+        }
+
+        .rail-item::after {
+            display: none;
+        }
+
+        .tab-shell {
+            display: inline-flex;
+            gap: 6px;
+            padding: 4px;
+            background: #eef2f7;
+            border: 1px solid var(--line-soft);
+            border-radius: 999px;
+        }
+
+        .tab-chip {
+            border: 1px solid transparent;
+            background: transparent;
+            color: var(--text-soft);
+            border-radius: 999px;
+            padding: 10px 16px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: background-color 120ms ease, color 120ms ease, border-color 120ms ease;
+        }
+
+        .tab-chip.active {
+            color: var(--text-strong);
+            background: #ffffff;
+            border-color: var(--line-soft);
+        }
+
+        .topology-card {
+            padding: 18px;
+            border-radius: 16px;
+            background: var(--panel);
+            border: 1px solid var(--line-soft);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .topology-card::before {
+            display: none;
+        }
+
+        .system-band {
+            position: relative;
+            border-radius: 12px;
+            padding: 14px 14px 14px 18px;
+            background: var(--panel-muted);
+            border: 1px solid var(--line-soft);
+        }
+
+        .system-band::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            border-radius: 12px 0 0 12px;
+            background: var(--line-mid);
+        }
+
+        .module-lane {
+            position: relative;
+            padding-left: 12px;
+        }
+
+        .module-lane::before {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 4px;
+            bottom: 4px;
+            width: 1px;
+            background: var(--line-mid);
+        }
+
+        .module-lane::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            top: 20px;
+            width: 10px;
+            height: 1px;
+            background: var(--line-mid);
+        }
+
+        .node-panel {
+            width: 100%;
+            border: 1px solid var(--line-soft);
+            text-align: left;
+            padding: 12px;
+            border-radius: 10px;
+            background: #ffffff;
+            color: inherit;
+            transition: border-color 120ms ease, background-color 120ms ease;
+        }
+
+        .node-summary {
+            display: -webkit-box;
+            -webkit-box-orient: vertical;
+            -webkit-line-clamp: 2;
+            overflow: hidden;
+            min-height: 32px;
+        }
+
+        .node-panel:hover {
+            border-color: #cbd5e1;
+        }
+
+        .node-panel.active {
+            background: #f8fbff;
+            border-color: #93c5fd;
+        }
+
+        .node-panel.active .node-focus {
+            opacity: 1;
+        }
+
+        .node-focus {
+            display: none;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .metric-card {
+            padding: 12px 12px 10px;
+            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid var(--line-soft);
+        }
+
+        .detail-pane {
+            position: sticky;
+            top: 12px;
+            align-self: start;
+        }
+
+        .detail-pane .console-panel {
+            background: #ffffff;
+        }
+
+        .data-strip {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .data-strip span {
+            padding: 4px 8px;
+            border-radius: 999px;
+            font-size: 10px;
+            background: #f1f5f9;
+            color: var(--text-soft);
+            border: 1px solid var(--line-soft);
+        }
+
+        .card-field-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 8px;
+        }
+
+        .card-field {
+            min-width: 0;
+            padding: 10px;
+            border-radius: 10px;
+            background: #f8fafc;
+            border: 1px solid var(--line-soft);
+        }
+
+        .card-field-label {
+            font-size: 10px;
+            color: var(--text-soft);
+        }
+
+        .card-field-value {
+            margin-top: 5px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-strong);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .detail-block {
+            border-radius: 12px;
+            background: #ffffff;
+            border: 1px solid var(--line-soft);
+            padding: 12px;
+        }
+
+        .detail-section {
+            padding-top: 18px;
+            border-top: 1px solid var(--line-soft);
+        }
+
+        .detail-section:first-child {
+            padding-top: 0;
+            border-top: 0;
+        }
+
+        .detail-section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 12px;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-strong);
+        }
+
+        .detail-section-title::before {
+            content: "";
+            width: 2px;
+            height: 18px;
+            border-radius: 999px;
+            background: var(--accent);
+        }
+
+        .detail-table {
+            border-top: 1px solid var(--line-soft);
+        }
+
+        .detail-table-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 16px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .detail-table-row:last-child {
+            border-bottom: 0;
+        }
+
+        .detail-table-label {
+            font-size: 12px;
+            color: var(--text-soft);
+        }
+
+        .detail-table-value {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-strong);
+            text-align: right;
+        }
+
+        .detail-note {
+            margin-top: 12px;
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 12px;
+            line-height: 1.6;
+            background: #f8fafc;
+            color: var(--text-main);
+        }
+
+        .detail-note.warning {
+            background: #fff7ed;
+            color: #9a3412;
+        }
+
+        .detail-note.success {
+            background: #f0fdf4;
+            color: var(--success);
+        }
+
+        .detail-accordion {
+            margin-top: 18px;
+            border: 1px solid var(--line-soft);
+            border-radius: 12px;
+            background: #ffffff;
+        }
+
+        .detail-accordion summary {
+            list-style: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 14px 16px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .detail-accordion summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .detail-accordion[open] summary {
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .detail-accordion-body {
+            padding: 14px 16px 16px;
+        }
+
+        .detail-accordion-group + .detail-accordion-group {
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--line-soft);
+        }
+
+        .row-divider > div:not(:last-child) {
+            border-bottom: 1px solid var(--line-soft);
+        }
+
+        .hardware-band {
+            border-radius: 12px;
+            padding: 14px;
+            background: var(--panel-muted);
+            border: 1px solid var(--line-soft);
+        }
+
+        .hardware-node {
+            width: 100%;
+            text-align: left;
+            border: 1px solid var(--line-soft);
+            border-radius: 10px;
+            padding: 12px;
+            background: #ffffff;
+            transition: border-color 120ms ease, background-color 120ms ease;
+        }
+
+        .hardware-node.active {
+            background: #fffaf5;
+            border-color: #fdba74;
+        }
+
+        .overview-strip {
+            border-radius: 12px;
+            padding: 16px;
+            background: var(--panel-muted);
+            border: 1px solid var(--line-soft);
+        }
+
+        .overview-row {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        @media (max-width: 1279px) {
+            .detail-pane {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .overview-row,
+            .metric-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .status-rail {
+                border-radius: 16px;
+            }
+
+            .console-panel,
+            .topology-card,
+            .hardware-band,
+            .overview-strip {
+                border-radius: 16px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script>
+const {
+  useState
+} = React;
+const iconGlyphs = {
+  activity: "●",
+  "clock-3": "◷",
+  gauge: "◌",
+  "alert-triangle": "!",
+  cpu: "□",
+  send: "↗",
+  box: "□",
+  "git-branch": "≋",
+  monitor: "▣",
+  bolt: "⚡",
+  wrench: "扳",
+  "chevron-right": ">"
+};
+const Icon = ({
+  name,
+  className = "w-4 h-4"
+}) => React.createElement("span", {
+  "aria-hidden": "true",
+  className: `inline-flex items-center justify-center text-[12px] leading-none ${className}`
+}, iconGlyphs[name] || "•");
+const railData = [{
+  label: "在线状态",
+  value: "在线",
+  meta: "MQTT 已连接",
+  tone: "success",
+  icon: "activity"
+}, {
+  label: "最后上报",
+  value: "14:42:10",
+  meta: "18 秒前",
+  tone: "accent",
+  icon: "clock-3"
+}, {
+  label: "运行模式",
+  value: "营业中",
+  meta: "待机可接单",
+  tone: "accent",
+  icon: "gauge"
+}, {
+  label: "异常摘要",
+  value: "2 项关注",
+  meta: "缺料, 校准偏差",
+  tone: "warning",
+  icon: "alert-triangle"
+}, {
+  label: "软件版本",
+  value: "v2.4.1",
+  meta: "recipe_20260514_01",
+  tone: "neutral",
+  icon: "cpu"
+}, {
+  label: "命令队列",
+  value: "无待执行",
+  meta: "最近强制刷新成功",
+  tone: "success",
+  icon: "send"
+}];
+const overviewSystems = [{
+  name: "原料系统",
+  status: "关注",
+  tone: "warning",
+  note: "3号料仓余量 4%"
+}, {
+  name: "制冷系统",
+  status: "正常",
+  tone: "success",
+  note: "冷藏箱 4.2℃, 制冷中"
+}, {
+  name: "加热系统",
+  status: "正常",
+  tone: "success",
+  note: "热水箱 95.5℃, 保温中"
+}, {
+  name: "制饮执行",
+  status: "关注",
+  tone: "warning",
+  note: "奶泵流量偏差 -8%"
+}, {
+  name: "交互与联网",
+  status: "正常",
+  tone: "success",
+  note: "平板在线, Wi-Fi 稳定"
+}];
+const moduleSystems = [{
+  id: "ingredient",
+  name: "原料系统",
+  icon: "box",
+  tone: "warning",
+  description: "负责原料供给, 温控和余量反馈",
+  note: "料仓模块存在 1 项缺料预警",
+  modules: [{
+    id: "hopper",
+    name: "料仓模块",
+    summary: "4 个运行节点, 1 个关注项",
+    nodes: [{
+      id: "hopper-01",
+      name: "1号料仓",
+      code: "HOP-01",
+      status: "正常",
+      tone: "success",
+      summary: "茉莉茶汤回路, 当前供给稳定",
+      metrics: [{
+        label: "当前余量",
+        value: "68%"
+      }, {
+        label: "原料",
+        value: "茉莉茶汤"
+      }, {
+        label: "更新时间",
+        value: "14:42:10"
+      }],
+      tags: ["液体", "启用", "可出料"],
+      detail: {
+        headline: "供给稳定",
+        subline: "当前料仓状态良好, 最近 6 小时无异常",
+        liveMetrics: [{
+          label: "余量",
+          value: "68%",
+          hint: "1360 ml"
+        }, {
+          label: "出料状态",
+          value: "待机",
+          hint: "最近执行 14:39:12"
+        }, {
+          label: "可服务杯数",
+          value: "26 杯",
+          hint: "按当前配方估算"
+        }, {
+          label: "温度",
+          value: "6.1℃",
+          hint: "冷藏回路联动"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "原料系统 / 料仓模块 / 1号料仓"
+          }, {
+            label: "绑定原料",
+            value: "茉莉茶汤"
+          }, {
+            label: "启用状态",
+            value: "已启用",
+            tone: "success"
+          }, {
+            label: "最近补货",
+            value: "2026-05-13 20:10:12"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "当前余量",
+            value: "68%"
+          }, {
+            label: "当前体积",
+            value: "1360 ml"
+          }, {
+            label: "出料压力",
+            value: "0.42 MPa"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:42:10",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近校准",
+            value: "2026-05-13 22:10:24"
+          }, {
+            label: "最近清洗",
+            value: "2026-05-14 09:30:15"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }]
+        }]
+      }
+    }, {
+      id: "hopper-03",
+      name: "3号料仓",
+      code: "HOP-03",
+      status: "缺料",
+      tone: "warning",
+      summary: "奶基底供给不足, 已进入补货关注",
+      metrics: [{
+        label: "当前余量",
+        value: "4%"
+      }, {
+        label: "原料",
+        value: "奶基底"
+      }, {
+        label: "更新时间",
+        value: "14:42:07"
+      }],
+      tags: ["液体", "补货关注", "低阈值"],
+      detail: {
+        headline: "补货预警中",
+        subline: "该节点已接近缺料阈值, 预计只剩 3 杯服务能力",
+        liveMetrics: [{
+          label: "余量",
+          value: "4%",
+          hint: "80 ml"
+        }, {
+          label: "状态等级",
+          value: "L2 预警",
+          hint: "已触发门店提醒"
+        }, {
+          label: "可服务杯数",
+          value: "3 杯",
+          hint: "按当前配方估算"
+        }, {
+          label: "最近上报",
+          value: "14:42:07",
+          hint: "实时同步"
+        }],
+        alerts: ["已触发缺料预警, 仍处于可营业状态", "建议 20 分钟内完成补货, 避免影响奶茶配方出杯"],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "原料系统 / 料仓模块 / 3号料仓"
+          }, {
+            label: "绑定原料",
+            value: "奶基底"
+          }, {
+            label: "启用状态",
+            value: "已启用",
+            tone: "success"
+          }, {
+            label: "预警等级",
+            value: "补货预警",
+            tone: "warning"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "当前余量",
+            value: "4%",
+            tone: "warning"
+          }, {
+            label: "当前体积",
+            value: "80 ml"
+          }, {
+            label: "最近出料",
+            value: "2026-05-14 14:36:22"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:42:07",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近补货",
+            value: "2026-05-13 20:10:12"
+          }, {
+            label: "最近异常",
+            value: "2026-05-14 13:58:44 余量低于阈值"
+          }, {
+            label: "建议动作",
+            value: "安排门店补货",
+            tone: "warning"
+          }]
+        }]
+      }
+    }, {
+      id: "hopper-04",
+      name: "4号料仓",
+      code: "HOP-04",
+      status: "正常",
+      tone: "success",
+      summary: "椰果辅料, 供给与余量稳定",
+      metrics: [{
+        label: "当前余量",
+        value: "74%"
+      }, {
+        label: "原料",
+        value: "椰果"
+      }, {
+        label: "更新时间",
+        value: "14:42:05"
+      }],
+      tags: ["固体", "启用", "正常"],
+      detail: {
+        headline: "辅料供给稳定",
+        subline: "固体辅料节点运行正常, 无卡料风险",
+        liveMetrics: [{
+          label: "余量",
+          value: "74%",
+          hint: "1110 g"
+        }, {
+          label: "执行状态",
+          value: "待机",
+          hint: "最近动作 14:35:08"
+        }, {
+          label: "卡料风险",
+          value: "低",
+          hint: "近 24h 无异常"
+        }, {
+          label: "更新时间",
+          value: "14:42:05",
+          hint: "实时同步"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "原料系统 / 料仓模块 / 4号料仓"
+          }, {
+            label: "绑定原料",
+            value: "椰果"
+          }, {
+            label: "原料类型",
+            value: "固体辅料"
+          }, {
+            label: "启用状态",
+            value: "已启用",
+            tone: "success"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "当前余量",
+            value: "74%"
+          }, {
+            label: "当前重量",
+            value: "1110 g"
+          }, {
+            label: "搅拌状态",
+            value: "待机"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:42:05",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近补货",
+            value: "2026-05-13 19:55:43"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }, {
+            label: "最近校准",
+            value: "2026-05-11 16:21:00"
+          }]
+        }]
+      }
+    }]
+  }, {
+    id: "temperature",
+    name: "温控模块",
+    summary: "2 个运行节点, 温控均正常",
+    nodes: [{
+      id: "cold-box-01",
+      name: "冷藏箱",
+      code: "COLD-01",
+      status: "正常",
+      tone: "success",
+      summary: "制冷中, 奶仓与茶基底回路温度稳定",
+      metrics: [{
+        label: "实时温度",
+        value: "4.2℃"
+      }, {
+        label: "目标温度",
+        value: "4.0℃"
+      }, {
+        label: "门体状态",
+        value: "关闭"
+      }],
+      tags: ["温控", "制冷中", "在线"],
+      detail: {
+        headline: "制冷稳定",
+        subline: "冷藏回路运行正常, 温度偏差处于可控范围",
+        liveMetrics: [{
+          label: "实时温度",
+          value: "4.2℃",
+          hint: "目标 4.0℃"
+        }, {
+          label: "状态",
+          value: "制冷中",
+          hint: "压缩机工作中"
+        }, {
+          label: "门体状态",
+          value: "关闭",
+          hint: "最近开门 11:23"
+        }, {
+          label: "更新时间",
+          value: "14:42:09",
+          hint: "实时同步"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "原料系统 / 温控模块 / 冷藏箱"
+          }, {
+            label: "制冷区域",
+            value: "奶仓 + 茶基底区"
+          }, {
+            label: "控制模式",
+            value: "自动温控"
+          }, {
+            label: "状态等级",
+            value: "正常",
+            tone: "success"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "实时温度",
+            value: "4.2℃"
+          }, {
+            label: "温度偏差",
+            value: "+0.2℃"
+          }, {
+            label: "压缩机状态",
+            value: "运行中"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:42:09",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近门开记录",
+            value: "2026-05-14 11:23:19"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }, {
+            label: "最近除霜",
+            value: "2026-05-14 06:30:00"
+          }]
+        }]
+      }
+    }, {
+      id: "hot-water-01",
+      name: "热水箱",
+      code: "HOT-01",
+      status: "正常",
+      tone: "success",
+      summary: "保温中, 热饮冲泡链路稳定",
+      metrics: [{
+        label: "当前温度",
+        value: "95.5℃"
+      }, {
+        label: "液位",
+        value: "85%"
+      }, {
+        label: "更新时间",
+        value: "14:42:11"
+      }],
+      tags: ["加热", "保温中", "在线"],
+      detail: {
+        headline: "保温稳定",
+        subline: "热水箱温控稳定, 当前液位满足连续出杯",
+        liveMetrics: [{
+          label: "当前温度",
+          value: "95.5℃",
+          hint: "目标 96.0℃"
+        }, {
+          label: "液位",
+          value: "85%",
+          hint: "充足"
+        }, {
+          label: "加热状态",
+          value: "保温中",
+          hint: "最近升温 07:52"
+        }, {
+          label: "更新时间",
+          value: "14:42:11",
+          hint: "实时同步"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "原料系统 / 温控模块 / 热水箱"
+          }, {
+            label: "用途",
+            value: "热饮冲泡"
+          }, {
+            label: "控制模式",
+            value: "恒温保温"
+          }, {
+            label: "状态等级",
+            value: "正常",
+            tone: "success"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "当前温度",
+            value: "95.5℃"
+          }, {
+            label: "液位",
+            value: "85%"
+          }, {
+            label: "加热状态",
+            value: "保温中"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:42:11",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近清洗",
+            value: "2026-05-13 22:05:42"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }, {
+            label: "最近加热启动",
+            value: "2026-05-14 07:52:10"
+          }]
+        }]
+      }
+    }]
+  }]
+}, {
+  id: "brew",
+  name: "制饮执行",
+  icon: "git-branch",
+  tone: "warning",
+  description: "负责泵阀, 出杯与封膜等执行动作",
+  note: "奶泵节点出现流量偏差, 需关注校准",
+  modules: [{
+    id: "pump-module",
+    name: "泵阀模块",
+    summary: "3 个运行节点, 1 个性能降级",
+    nodes: [{
+      id: "milk-pump-a",
+      name: "奶泵 A",
+      code: "MILK-PUMP-A",
+      status: "关注",
+      tone: "warning",
+      summary: "流量偏低, 建议安排校准",
+      metrics: [{
+        label: "当前状态",
+        value: "性能降级"
+      }, {
+        label: "流量偏差",
+        value: "-8%"
+      }, {
+        label: "更新时间",
+        value: "14:41:49"
+      }],
+      tags: ["执行器", "校准关注", "奶路"],
+      detail: {
+        headline: "流量偏差预警",
+        subline: "当前仍可执行, 但长时间不校准可能影响配方一致性",
+        liveMetrics: [{
+          label: "状态",
+          value: "性能降级",
+          hint: "仍可执行"
+        }, {
+          label: "流量偏差",
+          value: "-8%",
+          hint: "低于基线"
+        }, {
+          label: "今日执行",
+          value: "18 次",
+          hint: "峰值时段正常"
+        }, {
+          label: "更新时间",
+          value: "14:41:49",
+          hint: "实时同步"
+        }],
+        alerts: ["近 3 次校验结果均低于机型基线, 已触发校准关注", "建议在门店低峰时段执行一键校准, 避免长期影响奶量稳定性"],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "制饮执行 / 泵阀模块 / 奶泵 A"
+          }, {
+            label: "驱动对象",
+            value: "奶路回路 A"
+          }, {
+            label: "执行状态",
+            value: "性能降级",
+            tone: "warning"
+          }, {
+            label: "默认任务",
+            value: "奶基底定量出料"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "流量偏差",
+            value: "-8%",
+            tone: "warning"
+          }, {
+            label: "今日执行次数",
+            value: "18 次"
+          }, {
+            label: "平均执行时长",
+            value: "1.4 s"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:41:49",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近校准",
+            value: "2026-05-08 09:15:00"
+          }, {
+            label: "最近维护",
+            value: "2026-05-10 18:32:11"
+          }, {
+            label: "建议动作",
+            value: "安排校准",
+            tone: "warning"
+          }]
+        }]
+      }
+    }, {
+      id: "syrup-pump-a",
+      name: "糖浆泵 A",
+      code: "PUMP-A",
+      status: "正常",
+      tone: "success",
+      summary: "执行平稳, 最近动作正常",
+      metrics: [{
+        label: "当前状态",
+        value: "待机"
+      }, {
+        label: "今日执行",
+        value: "24 次"
+      }, {
+        label: "更新时间",
+        value: "14:41:53"
+      }],
+      tags: ["执行器", "正常", "糖浆回路"],
+      detail: {
+        headline: "执行正常",
+        subline: "糖浆泵当前运行平稳, 与基线无明显偏差",
+        liveMetrics: [{
+          label: "状态",
+          value: "待机",
+          hint: "最近执行 14:39:12"
+        }, {
+          label: "今日执行",
+          value: "24 次",
+          hint: "峰值正常"
+        }, {
+          label: "平均时长",
+          value: "1.2 s",
+          hint: "与基线一致"
+        }, {
+          label: "更新时间",
+          value: "14:41:53",
+          hint: "实时同步"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "制饮执行 / 泵阀模块 / 糖浆泵 A"
+          }, {
+            label: "驱动对象",
+            value: "糖浆回路 A"
+          }, {
+            label: "执行状态",
+            value: "正常",
+            tone: "success"
+          }, {
+            label: "默认任务",
+            value: "糖浆定量出料"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "今日执行次数",
+            value: "24 次"
+          }, {
+            label: "平均执行时长",
+            value: "1.2 s"
+          }, {
+            label: "最近动作",
+            value: "2026-05-14 14:39:12"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:41:53",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近维护",
+            value: "2026-05-12 22:15:33"
+          }, {
+            label: "最近校准",
+            value: "2026-05-13 22:10:24"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }]
+        }]
+      }
+    }, {
+      id: "inlet-valve",
+      name: "主进水阀",
+      code: "VALVE-01",
+      status: "正常",
+      tone: "success",
+      summary: "开闭动作正常, 无滞后",
+      metrics: [{
+        label: "阀门状态",
+        value: "正常"
+      }, {
+        label: "今日动作",
+        value: "36 次"
+      }, {
+        label: "更新时间",
+        value: "14:41:51"
+      }],
+      tags: ["阀门", "正常", "进水回路"],
+      detail: {
+        headline: "阀门响应稳定",
+        subline: "主进水阀当前响应正常, 无卡滞或延迟迹象",
+        liveMetrics: [{
+          label: "状态",
+          value: "正常",
+          hint: "回路可用"
+        }, {
+          label: "今日动作",
+          value: "36 次",
+          hint: "峰值正常"
+        }, {
+          label: "响应时长",
+          value: "0.6 s",
+          hint: "与基线一致"
+        }, {
+          label: "更新时间",
+          value: "14:41:51",
+          hint: "实时同步"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "制饮执行 / 泵阀模块 / 主进水阀"
+          }, {
+            label: "控制对象",
+            value: "主进水回路"
+          }, {
+            label: "执行类型",
+            value: "开闭阀"
+          }, {
+            label: "执行状态",
+            value: "正常",
+            tone: "success"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "阀门响应时长",
+            value: "0.6 s"
+          }, {
+            label: "今日动作",
+            value: "36 次"
+          }, {
+            label: "最近动作",
+            value: "2026-05-14 14:39:11"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:41:51",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近维护",
+            value: "2026-05-11 16:43:22"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }, {
+            label: "最近校验",
+            value: "--"
+          }]
+        }]
+      }
+    }]
+  }, {
+    id: "output-module",
+    name: "出杯模块",
+    summary: "2 个运行节点, 当前均正常",
+    nodes: [{
+      id: "cup-station",
+      name: "出杯位",
+      code: "CUP-01",
+      status: "正常",
+      tone: "success",
+      summary: "杯位就绪, 检测链路正常",
+      metrics: [{
+        label: "当前状态",
+        value: "就绪"
+      }, {
+        label: "今日产出",
+        value: "126 杯"
+      }, {
+        label: "更新时间",
+        value: "14:41:45"
+      }],
+      tags: ["杯位", "就绪", "在线"],
+      detail: {
+        headline: "出杯位可用",
+        subline: "当前杯位检测正常, 无卡杯和缺杯异常",
+        liveMetrics: [{
+          label: "状态",
+          value: "就绪",
+          hint: "可接新杯单"
+        }, {
+          label: "今日产出",
+          value: "126 杯",
+          hint: "较昨日 +8%"
+        }, {
+          label: "卡杯风险",
+          value: "低",
+          hint: "近 24h 无异常"
+        }, {
+          label: "更新时间",
+          value: "14:41:45",
+          hint: "实时同步"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "制饮执行 / 出杯模块 / 出杯位"
+          }, {
+            label: "组件类型",
+            value: "出杯工作站"
+          }, {
+            label: "当前状态",
+            value: "就绪",
+            tone: "success"
+          }, {
+            label: "对应工位",
+            value: "主出杯位"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "今日产出",
+            value: "126 杯"
+          }, {
+            label: "杯位检测",
+            value: "正常"
+          }, {
+            label: "最近出杯",
+            value: "2026-05-14 14:39:11"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:41:45",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近维护",
+            value: "2026-05-10 09:15:20"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }, {
+            label: "最近清洁",
+            value: "2026-05-14 09:30:15"
+          }]
+        }]
+      }
+    }, {
+      id: "seal-unit",
+      name: "封膜器",
+      code: "SEAL-01",
+      status: "正常",
+      tone: "success",
+      summary: "待机中, 温控平稳",
+      metrics: [{
+        label: "当前状态",
+        value: "待机"
+      }, {
+        label: "实时温度",
+        value: "179℃"
+      }, {
+        label: "更新时间",
+        value: "14:41:44"
+      }],
+      tags: ["封膜", "加热", "待机"],
+      detail: {
+        headline: "封膜温控稳定",
+        subline: "当前封膜器处于待机保温状态, 可随杯单即时动作",
+        liveMetrics: [{
+          label: "状态",
+          value: "待机",
+          hint: "可随时封膜"
+        }, {
+          label: "实时温度",
+          value: "179℃",
+          hint: "目标 180℃"
+        }, {
+          label: "今日封膜",
+          value: "118 次",
+          hint: "节拍正常"
+        }, {
+          label: "更新时间",
+          value: "14:41:44",
+          hint: "实时同步"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "制饮执行 / 出杯模块 / 封膜器"
+          }, {
+            label: "组件类型",
+            value: "封膜执行器"
+          }, {
+            label: "默认动作",
+            value: "出杯后封膜"
+          }, {
+            label: "当前状态",
+            value: "待机",
+            tone: "success"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "实时温度",
+            value: "179℃"
+          }, {
+            label: "温控偏差",
+            value: "+1℃"
+          }, {
+            label: "今日封膜",
+            value: "118 次"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:41:44",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近维护",
+            value: "2026-05-12 20:13:43"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }, {
+            label: "最近重启",
+            value: "--"
+          }]
+        }]
+      }
+    }]
+  }]
+}, {
+  id: "utility",
+  name: "交互与联网",
+  icon: "monitor",
+  tone: "success",
+  description: "负责屏幕交互, 网络接入与外设链路",
+  note: "平板, Wi-Fi 与播报链路当前均稳定",
+  modules: [{
+    id: "screen-module",
+    name: "人机交互模块",
+    summary: "2 个运行节点, 交互链路稳定",
+    nodes: [{
+      id: "screen-01",
+      name: "前台屏",
+      code: "SCREEN-01",
+      status: "正常",
+      tone: "success",
+      summary: "在线, 当前页面为营业主页",
+      metrics: [{
+        label: "网络状态",
+        value: "正常"
+      }, {
+        label: "当前页面",
+        value: "营业主页"
+      }, {
+        label: "更新时间",
+        value: "14:42:10"
+      }],
+      tags: ["交互", "在线", "平板"],
+      detail: {
+        headline: "交互链路稳定",
+        subline: "屏幕在线, 顶部状态栏与业务页面刷新正常",
+        liveMetrics: [{
+          label: "状态",
+          value: "在线",
+          hint: "网络正常"
+        }, {
+          label: "当前页面",
+          value: "营业主页",
+          hint: "业务页前台展示"
+        }, {
+          label: "亮屏时长",
+          value: "6h 12m",
+          hint: "今日累计"
+        }, {
+          label: "更新时间",
+          value: "14:42:10",
+          hint: "实时同步"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "交互与联网 / 人机交互模块 / 前台屏"
+          }, {
+            label: "屏幕识别码",
+            value: "PAD-755-01",
+            mono: true
+          }, {
+            label: "显示分辨率",
+            value: "1920 x 1080"
+          }, {
+            label: "连接状态",
+            value: "在线",
+            tone: "success"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "当前页面",
+            value: "营业主页"
+          }, {
+            label: "网络状态",
+            value: "正常"
+          }, {
+            label: "最近切前台",
+            value: "2026-05-14 14:18:35"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:42:10",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近重启",
+            value: "2026-05-12 08:10:02"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }, {
+            label: "最近升级",
+            value: "2026-05-10 02:11:43"
+          }]
+        }]
+      }
+    }, {
+      id: "voice-01",
+      name: "语音播报器",
+      code: "VOICE-01",
+      status: "正常",
+      tone: "success",
+      summary: "播报链路在线, 音量档位稳定",
+      metrics: [{
+        label: "当前状态",
+        value: "就绪"
+      }, {
+        label: "今日播报",
+        value: "312 次"
+      }, {
+        label: "更新时间",
+        value: "14:41:59"
+      }],
+      tags: ["语音", "在线", "就绪"],
+      detail: {
+        headline: "播报器就绪",
+        subline: "播报链路正常, 不影响营业和用户引导",
+        liveMetrics: [{
+          label: "状态",
+          value: "就绪",
+          hint: "可播报"
+        }, {
+          label: "今日播报",
+          value: "312 次",
+          hint: "峰值正常"
+        }, {
+          label: "音量档位",
+          value: "70%",
+          hint: "店内标准档位"
+        }, {
+          label: "更新时间",
+          value: "14:41:59",
+          hint: "实时同步"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "交互与联网 / 人机交互模块 / 语音播报器"
+          }, {
+            label: "组件类型",
+            value: "语音播报器"
+          }, {
+            label: "当前状态",
+            value: "就绪",
+            tone: "success"
+          }, {
+            label: "默认模式",
+            value: "营业播报"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "今日播报",
+            value: "312 次"
+          }, {
+            label: "音量档位",
+            value: "70%"
+          }, {
+            label: "最近播报",
+            value: "2026-05-14 14:39:13"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:41:59",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近重启",
+            value: "2026-05-12 08:10:02"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }, {
+            label: "最近升级",
+            value: "--"
+          }]
+        }]
+      }
+    }]
+  }, {
+    id: "network-module",
+    name: "联网模块",
+    summary: "2 个运行节点, 主链路在线",
+    nodes: [{
+      id: "wifi-01",
+      name: "Wi-Fi 模组",
+      code: "WIFI-01",
+      status: "正常",
+      tone: "success",
+      summary: "信号稳定, MQTT 已连接",
+      metrics: [{
+        label: "信号强度",
+        value: "-51 dBm"
+      }, {
+        label: "MQTT",
+        value: "Connected"
+      }, {
+        label: "更新时间",
+        value: "14:42:10"
+      }],
+      tags: ["通信", "在线", "稳定"],
+      detail: {
+        headline: "主链路在线",
+        subline: "设备主通信链路稳定, 当前无弱网和离线抖动",
+        liveMetrics: [{
+          label: "状态",
+          value: "在线",
+          hint: "Wi-Fi 主链路"
+        }, {
+          label: "MQTT",
+          value: "Connected",
+          hint: "云端在线"
+        }, {
+          label: "信号强度",
+          value: "-51 dBm",
+          hint: "高于告警阈值"
+        }, {
+          label: "更新时间",
+          value: "14:42:10",
+          hint: "实时同步"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "交互与联网 / 联网模块 / Wi-Fi 模组"
+          }, {
+            label: "通信类型",
+            value: "Wi-Fi"
+          }, {
+            label: "SSID",
+            value: "Store-Guest-IOT"
+          }, {
+            label: "连接状态",
+            value: "在线",
+            tone: "success"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "MQTT 状态",
+            value: "Connected"
+          }, {
+            label: "信号强度",
+            value: "-51 dBm"
+          }, {
+            label: "IP 地址",
+            value: "192.168.31.104",
+            mono: true
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:42:10",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近重连",
+            value: "2026-05-14 08:16:45"
+          }, {
+            label: "最近掉线",
+            value: "无",
+            tone: "success"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }]
+        }]
+      }
+    }, {
+      id: "scan-01",
+      name: "扫码器",
+      code: "SCAN-01",
+      status: "正常",
+      tone: "success",
+      summary: "扫码链路可用, 最近识别成功",
+      metrics: [{
+        label: "当前状态",
+        value: "就绪"
+      }, {
+        label: "今日扫码",
+        value: "86 次"
+      }, {
+        label: "更新时间",
+        value: "14:40:54"
+      }],
+      tags: ["外设", "在线", "扫码"],
+      detail: {
+        headline: "扫码链路可用",
+        subline: "外设与平板通信正常, 近 24 小时无识别失败告警",
+        liveMetrics: [{
+          label: "状态",
+          value: "就绪",
+          hint: "可扫码"
+        }, {
+          label: "今日扫码",
+          value: "86 次",
+          hint: "峰值正常"
+        }, {
+          label: "最近成功",
+          value: "14:36:18",
+          hint: "最近交易"
+        }, {
+          label: "更新时间",
+          value: "14:40:54",
+          hint: "实时同步"
+        }],
+        alerts: [],
+        groups: [{
+          title: "运行口径",
+          rows: [{
+            label: "所属路径",
+            value: "交互与联网 / 联网模块 / 扫码器"
+          }, {
+            label: "组件类型",
+            value: "扫码外设"
+          }, {
+            label: "通信方式",
+            value: "USB"
+          }, {
+            label: "当前状态",
+            value: "就绪",
+            tone: "success"
+          }]
+        }, {
+          title: "实时状态",
+          rows: [{
+            label: "今日扫码",
+            value: "86 次"
+          }, {
+            label: "最近扫码结果",
+            value: "成功"
+          }, {
+            label: "最近扫码时间",
+            value: "2026-05-14 14:36:18"
+          }, {
+            label: "最近上报",
+            value: "2026-05-14 14:40:54",
+            mono: true
+          }]
+        }, {
+          title: "维护轨迹",
+          rows: [{
+            label: "最近重启",
+            value: "2026-05-11 07:42:32"
+          }, {
+            label: "最近异常",
+            value: "无",
+            tone: "success"
+          }, {
+            label: "最近升级",
+            value: "--"
+          }]
+        }]
+      }
+    }]
+  }]
+}];
+const buildHopperNodes = () => {
+  const hopperModule = moduleSystems[0].modules[0];
+  const successTemplate = hopperModule.nodes[0];
+  const warningTemplate = hopperModule.nodes[1];
+  const hopperConfigs = [{
+    index: 1,
+    ingredient: "茉莉茶汤",
+    fill: "68%",
+    volume: "1360 ml",
+    cups: "26 杯",
+    summary: "茉莉茶汤回路, 当前供给稳定"
+  }, {
+    index: 2,
+    ingredient: "乌龙茶汤",
+    fill: "72%",
+    volume: "1440 ml",
+    cups: "29 杯",
+    summary: "乌龙茶汤回路, 当前供给稳定"
+  }, {
+    index: 3,
+    ingredient: "奶基底",
+    fill: "4%",
+    volume: "80 ml",
+    cups: "3 杯",
+    summary: "奶基底供给不足, 已进入补货关注",
+    warning: true
+  }, {
+    index: 4,
+    ingredient: "柠檬汁",
+    fill: "61%",
+    volume: "1220 ml",
+    cups: "22 杯",
+    summary: "柠檬汁回路, 当前供给稳定"
+  }, {
+    index: 5,
+    ingredient: "西柚汁",
+    fill: "58%",
+    volume: "1160 ml",
+    cups: "21 杯",
+    summary: "西柚汁回路, 当前供给稳定"
+  }, {
+    index: 6,
+    ingredient: "百香果汁",
+    fill: "65%",
+    volume: "1300 ml",
+    cups: "24 杯",
+    summary: "百香果汁回路, 当前供给稳定"
+  }, {
+    index: 7,
+    ingredient: "糖浆 A",
+    fill: "83%",
+    volume: "1660 ml",
+    cups: "35 杯",
+    summary: "糖浆回路 A, 当前供给稳定"
+  }, {
+    index: 8,
+    ingredient: "糖浆 B",
+    fill: "77%",
+    volume: "1540 ml",
+    cups: "31 杯",
+    summary: "糖浆回路 B, 当前供给稳定"
+  }, {
+    index: 9,
+    ingredient: "蜂蜜液",
+    fill: "49%",
+    volume: "980 ml",
+    cups: "16 杯",
+    summary: "蜂蜜液回路, 当前供给稳定"
+  }, {
+    index: 10,
+    ingredient: "厚乳",
+    fill: "54%",
+    volume: "1080 ml",
+    cups: "17 杯",
+    summary: "厚乳回路, 当前供给稳定"
+  }, {
+    index: 11,
+    ingredient: "冰博克奶",
+    fill: "46%",
+    volume: "920 ml",
+    cups: "14 杯",
+    summary: "冰博克奶回路, 当前供给稳定"
+  }, {
+    index: 12,
+    ingredient: "抹茶液",
+    fill: "71%",
+    volume: "1420 ml",
+    cups: "30 杯",
+    summary: "抹茶液回路, 当前供给稳定"
+  }, {
+    index: 13,
+    ingredient: "红茶基底",
+    fill: "63%",
+    volume: "1260 ml",
+    cups: "23 杯",
+    summary: "红茶基底回路, 当前供给稳定"
+  }, {
+    index: 14,
+    ingredient: "绿茶基底",
+    fill: "67%",
+    volume: "1340 ml",
+    cups: "25 杯",
+    summary: "绿茶基底回路, 当前供给稳定"
+  }, {
+    index: 15,
+    ingredient: "咖啡液",
+    fill: "52%",
+    volume: "1040 ml",
+    cups: "18 杯",
+    summary: "咖啡液回路, 当前供给稳定"
+  }, {
+    index: 16,
+    ingredient: "冷萃液",
+    fill: "57%",
+    volume: "1140 ml",
+    cups: "20 杯",
+    summary: "冷萃液回路, 当前供给稳定"
+  }, {
+    index: 17,
+    ingredient: "芝士奶盖",
+    fill: "43%",
+    volume: "860 ml",
+    cups: "12 杯",
+    summary: "芝士奶盖回路, 当前供给稳定"
+  }, {
+    index: 18,
+    ingredient: "备用原料",
+    fill: "88%",
+    volume: "1760 ml",
+    cups: "38 杯",
+    summary: "备用原料回路, 当前供给稳定"
+  }];
+  return hopperConfigs.map((config, order) => {
+    const template = config.warning ? warningTemplate : successTemplate;
+    const node = JSON.parse(JSON.stringify(template));
+    const padIndex = String(config.index).padStart(2, "0");
+    const updateTime = `14:42:${String(10 + order).padStart(2, "0")}`;
+    node.id = `hopper-${padIndex}`;
+    node.name = `${config.index}号料仓`;
+    node.code = `HOP-${padIndex}`;
+    node.status = config.warning ? "缺料" : "正常";
+    node.tone = config.warning ? "warning" : "success";
+    node.summary = config.summary;
+    node.metrics[0].value = config.fill;
+    node.metrics[1].value = config.ingredient;
+    node.metrics[2].value = updateTime;
+    node.tags = config.warning ? ["液体", "补货关注", "低阈值"] : ["液体", "启用", "可出料"];
+    node.detail.headline = config.warning ? "补货预警中" : "供给稳定";
+    node.detail.subline = config.warning ? "该节点已接近缺料阈值, 建议尽快补货" : `${config.ingredient} 当前供给稳定, 可继续出料`;
+    node.detail.liveMetrics[0].value = config.fill;
+    node.detail.liveMetrics[0].hint = config.volume;
+    node.detail.liveMetrics[1].value = config.warning ? "L2 预警" : "待机";
+    node.detail.liveMetrics[1].hint = config.warning ? "已触发门店提醒" : "最近执行 14:39:12";
+    node.detail.liveMetrics[2].value = config.cups;
+    node.detail.liveMetrics[2].hint = "按当前配方估算";
+    node.detail.liveMetrics[3].value = updateTime;
+    node.detail.liveMetrics[3].hint = "实时同步";
+    node.detail.groups[0].rows[0].value = `原料系统 / 料仓模块 / ${config.index}号料仓`;
+    node.detail.groups[0].rows[1].value = config.ingredient;
+    node.detail.groups[1].rows[0].value = config.fill;
+    node.detail.groups[1].rows[1].value = config.volume;
+    node.detail.groups[1].rows[3].value = `2026-05-14 ${updateTime}`;
+    if (config.warning) {
+      node.detail.alerts = ["已触发缺料预警, 仍处于可营业状态", "建议 20 分钟内完成补货, 避免影响奶茶配方出杯"];
+      node.detail.groups[2].rows[2].value = "安排门店补货";
+      node.detail.groups[2].rows[2].tone = "warning";
+    } else {
+      node.detail.alerts = [];
+      node.detail.groups[0].rows[3].value = `2026-05-13 ${String(12 + order).padStart(2, "0")}:10:12`;
+      node.detail.groups[1].rows[2].value = "0.42 MPa";
+      node.detail.groups[2].rows[2].value = "无";
+      node.detail.groups[2].rows[2].tone = "success";
+    }
+    return node;
+  });
+};
+const hopperNodes = buildHopperNodes();
+moduleSystems[0].modules[0].nodes = hopperNodes;
+moduleSystems[0].modules[0].summary = `${hopperNodes.length} 个运行节点, 1 个关注项`;
+moduleSystems[0].note = `${hopperNodes.length} 个料仓 / 1 预警`;
+overviewSystems[0].note = `${hopperNodes.length} 个料仓, 3号料仓余量 4%`;
+const hardwareGroups = [{
+  id: "board",
+  name: "电控板信息",
+  icon: "cpu",
+  description: "主控板, IO 板, 驱动板运行和版本状态",
+  items: [{
+    id: "board-main-01",
+    name: "1号电控板",
+    code: "BOARD-MAIN-01",
+    status: "已连接",
+    tone: "success",
+    summary: "主控板在线, 固件 v2.4.1",
+    metrics: [{
+      label: "固件版本",
+      value: "v2.4.1"
+    }, {
+      label: "板温",
+      value: "43℃"
+    }, {
+      label: "电压",
+      value: "24.1V"
+    }],
+    detail: {
+      headline: "主控板运行稳定",
+      subline: "主控链路正常, 设备逻辑控制与云端交互稳定",
+      alerts: [],
+      groups: [{
+        title: "板卡状态",
+        rows: [{
+          label: "所属硬件分类",
+          value: "电控板信息 / 1号电控板"
+        }, {
+          label: "板卡类型",
+          value: "主控板"
+        }, {
+          label: "连接状态",
+          value: "已连接",
+          tone: "success"
+        }, {
+          label: "固件版本",
+          value: "v2.4.1"
+        }]
+      }, {
+        title: "运行指标",
+        rows: [{
+          label: "板温",
+          value: "43℃"
+        }, {
+          label: "电压",
+          value: "24.1V"
+        }, {
+          label: "硬件版本",
+          value: "HW-3.2"
+        }, {
+          label: "最近上报",
+          value: "2026-05-14 14:42:10",
+          mono: true
+        }]
+      }, {
+        title: "售后轨迹",
+        rows: [{
+          label: "最后重启",
+          value: "2026-05-12 08:10:02"
+        }, {
+          label: "最近升级",
+          value: "2026-05-10 02:11:43"
+        }, {
+          label: "故障码",
+          value: "无",
+          tone: "success"
+        }]
+      }]
+    }
+  }, {
+    id: "board-io-02",
+    name: "2号电控板",
+    code: "BOARD-IO-02",
+    status: "关注",
+    tone: "warning",
+    summary: "IO 板散热风扇转速偏低",
+    metrics: [{
+      label: "固件版本",
+      value: "v1.8.7"
+    }, {
+      label: "板温",
+      value: "51℃"
+    }, {
+      label: "风扇",
+      value: "偏低"
+    }],
+    detail: {
+      headline: "散热关注",
+      subline: "板卡仍在线, 但散热链路存在轻度风险, 建议售后排查",
+      alerts: ["散热风扇转速持续低于基线, 但当前温度仍在可控范围", "建议排查风扇积灰或供电异常, 避免高峰时段温升继续扩大"],
+      groups: [{
+        title: "板卡状态",
+        rows: [{
+          label: "所属硬件分类",
+          value: "电控板信息 / 2号电控板"
+        }, {
+          label: "板卡类型",
+          value: "IO 扩展板"
+        }, {
+          label: "连接状态",
+          value: "已连接",
+          tone: "success"
+        }, {
+          label: "散热状态",
+          value: "关注",
+          tone: "warning"
+        }]
+      }, {
+        title: "运行指标",
+        rows: [{
+          label: "板温",
+          value: "51℃",
+          tone: "warning"
+        }, {
+          label: "固件版本",
+          value: "v1.8.7"
+        }, {
+          label: "风扇转速",
+          value: "1800 rpm"
+        }, {
+          label: "最近上报",
+          value: "2026-05-14 14:41:31",
+          mono: true
+        }]
+      }, {
+        title: "售后轨迹",
+        rows: [{
+          label: "最近故障码",
+          value: "FAN_LOW_SPEED",
+          tone: "warning"
+        }, {
+          label: "建议动作",
+          value: "检查散热风扇"
+        }, {
+          label: "最近维修",
+          value: "2026-05-01 18:05:19"
+        }]
+      }]
+    }
+  }]
+}, {
+  id: "sensor",
+  name: "传感器信息",
+  icon: "activity",
+  description: "温度, 液位, 门磁等关键传感器状态",
+  items: [{
+    id: "temp-cold-01",
+    name: "冷藏箱温感 1",
+    code: "TEMP-COLD-01",
+    status: "正常",
+    tone: "success",
+    summary: "采样稳定, 当前 4.1℃",
+    metrics: [{
+      label: "当前值",
+      value: "4.1℃"
+    }, {
+      label: "采样周期",
+      value: "10 s"
+    }, {
+      label: "漂移判断",
+      value: "正常"
+    }],
+    detail: {
+      headline: "温感采样正常",
+      subline: "冷藏箱温感采样稳定, 未出现漂移与断采样",
+      alerts: [],
+      groups: [{
+        title: "传感器状态",
+        rows: [{
+          label: "所属硬件分类",
+          value: "传感器信息 / 冷藏箱温感 1"
+        }, {
+          label: "传感器类型",
+          value: "温度传感器"
+        }, {
+          label: "安装位置",
+          value: "冷藏箱上层"
+        }, {
+          label: "当前状态",
+          value: "正常",
+          tone: "success"
+        }]
+      }, {
+        title: "实时指标",
+        rows: [{
+          label: "当前值",
+          value: "4.1℃"
+        }, {
+          label: "采样周期",
+          value: "10 s"
+        }, {
+          label: "漂移判断",
+          value: "正常"
+        }, {
+          label: "最近上报",
+          value: "2026-05-14 14:42:09",
+          mono: true
+        }]
+      }, {
+        title: "售后轨迹",
+        rows: [{
+          label: "最近校准",
+          value: "2026-05-08 09:15:00"
+        }, {
+          label: "硬件通道",
+          value: "AI-03",
+          mono: true
+        }, {
+          label: "最近异常",
+          value: "无",
+          tone: "success"
+        }]
+      }]
+    }
+  }, {
+    id: "door-cold-01",
+    name: "冷藏门磁传感器",
+    code: "DOOR-COLD-01",
+    status: "正常",
+    tone: "success",
+    summary: "闭合正常, 最近开门 11:23",
+    metrics: [{
+      label: "当前值",
+      value: "闭合"
+    }, {
+      label: "事件模式",
+      value: "触发上报"
+    }, {
+      label: "最近事件",
+      value: "11:23:19"
+    }],
+    detail: {
+      headline: "门磁链路稳定",
+      subline: "门磁开闭事件能正常上报, 当前冷藏箱门体处于闭合状态",
+      alerts: [],
+      groups: [{
+        title: "传感器状态",
+        rows: [{
+          label: "所属硬件分类",
+          value: "传感器信息 / 冷藏门磁传感器"
+        }, {
+          label: "传感器类型",
+          value: "门磁传感器"
+        }, {
+          label: "安装位置",
+          value: "冷藏箱门体"
+        }, {
+          label: "当前状态",
+          value: "闭合",
+          tone: "success"
+        }]
+      }, {
+        title: "实时指标",
+        rows: [{
+          label: "当前值",
+          value: "闭合"
+        }, {
+          label: "上报模式",
+          value: "事件触发"
+        }, {
+          label: "最近开门",
+          value: "2026-05-14 11:23:19"
+        }, {
+          label: "最近上报",
+          value: "2026-05-14 11:23:19",
+          mono: true
+        }]
+      }, {
+        title: "售后轨迹",
+        rows: [{
+          label: "硬件通道",
+          value: "DI-11",
+          mono: true
+        }, {
+          label: "最近维修",
+          value: "--"
+        }, {
+          label: "最近异常",
+          value: "无",
+          tone: "success"
+        }]
+      }]
+    }
+  }]
+}, {
+  id: "actuator",
+  name: "执行器信息",
+  icon: "bolt",
+  description: "风扇, 电机, 驱动执行单元售后状态",
+  items: [{
+    id: "fan-01",
+    name: "散热风扇",
+    code: "FAN-01",
+    status: "关注",
+    tone: "warning",
+    summary: "转速偏低, 建议排查",
+    metrics: [{
+      label: "当前转速",
+      value: "1800 rpm"
+    }, {
+      label: "目标转速",
+      value: "2400 rpm"
+    }, {
+      label: "驱动通道",
+      value: "DRV-09"
+    }],
+    detail: {
+      headline: "转速低于基线",
+      subline: "当前风扇仍在工作, 但转速偏低, 已影响 IO 板散热稳定性",
+      alerts: ["与电控板 2 的散热关注相关联, 建议优先排查风扇链路"],
+      groups: [{
+        title: "执行器状态",
+        rows: [{
+          label: "所属硬件分类",
+          value: "执行器信息 / 散热风扇"
+        }, {
+          label: "执行器类型",
+          value: "散热风扇"
+        }, {
+          label: "安装位置",
+          value: "IO 板散热区"
+        }, {
+          label: "当前状态",
+          value: "关注",
+          tone: "warning"
+        }]
+      }, {
+        title: "实时指标",
+        rows: [{
+          label: "当前转速",
+          value: "1800 rpm",
+          tone: "warning"
+        }, {
+          label: "目标转速",
+          value: "2400 rpm"
+        }, {
+          label: "驱动通道",
+          value: "DRV-09",
+          mono: true
+        }, {
+          label: "最近上报",
+          value: "2026-05-14 14:41:31",
+          mono: true
+        }]
+      }, {
+        title: "售后轨迹",
+        rows: [{
+          label: "最近维修",
+          value: "2026-05-01 18:05:19"
+        }, {
+          label: "建议动作",
+          value: "检查供电与积灰",
+          tone: "warning"
+        }, {
+          label: "最近异常",
+          value: "低转速预警",
+          tone: "warning"
+        }]
+      }]
+    }
+  }, {
+    id: "motor-mix-01",
+    name: "1号搅拌电机",
+    code: "MOTOR-MIX-01",
+    status: "正常",
+    tone: "success",
+    summary: "转速稳定, 负载正常",
+    metrics: [{
+      label: "当前转速",
+      value: "1200 rpm"
+    }, {
+      label: "电流",
+      value: "0.8 A"
+    }, {
+      label: "驱动通道",
+      value: "DRV-02"
+    }],
+    detail: {
+      headline: "执行稳定",
+      subline: "搅拌电机当前负载正常, 无异响与卡阻风险",
+      alerts: [],
+      groups: [{
+        title: "执行器状态",
+        rows: [{
+          label: "所属硬件分类",
+          value: "执行器信息 / 1号搅拌电机"
+        }, {
+          label: "执行器类型",
+          value: "搅拌电机"
+        }, {
+          label: "安装位置",
+          value: "主混合腔"
+        }, {
+          label: "当前状态",
+          value: "正常",
+          tone: "success"
+        }]
+      }, {
+        title: "实时指标",
+        rows: [{
+          label: "当前转速",
+          value: "1200 rpm"
+        }, {
+          label: "电流",
+          value: "0.8 A"
+        }, {
+          label: "驱动通道",
+          value: "DRV-02",
+          mono: true
+        }, {
+          label: "最近上报",
+          value: "2026-05-14 14:41:36",
+          mono: true
+        }]
+      }, {
+        title: "售后轨迹",
+        rows: [{
+          label: "最近维护",
+          value: "2026-05-07 19:13:05"
+        }, {
+          label: "最近异常",
+          value: "无",
+          tone: "success"
+        }, {
+          label: "负载判断",
+          value: "正常",
+          tone: "success"
+        }]
+      }]
+    }
+  }]
+}];
+const moduleLookup = moduleSystems.reduce((acc, system) => {
+  system.modules.forEach(module => {
+    module.nodes.forEach(node => {
+      acc[node.id] = {
+        ...node,
+        systemName: system.name,
+        moduleName: module.name,
+        systemNote: system.note
+      };
+    });
+  });
+  return acc;
+}, {});
+const moduleStats = moduleSystems.reduce((acc, system) => {
+  acc.systems += 1;
+  system.modules.forEach(module => {
+    acc.modules += 1;
+    acc.nodes += module.nodes.length;
+    module.nodes.forEach(node => {
+      if (node.tone !== "success") {
+        acc.alerts += 1;
+      }
+    });
+  });
+  return acc;
+}, {
+  systems: 0,
+  modules: 0,
+  nodes: 0,
+  alerts: 0
+});
+const hardwareLookup = hardwareGroups.reduce((acc, group) => {
+  group.items.forEach(item => {
+    acc[item.id] = {
+      ...item,
+      groupName: group.name,
+      groupDescription: group.description
+    };
+  });
+  return acc;
+}, {});
+const hardwareStats = hardwareGroups.reduce((acc, group) => {
+  acc.groups += 1;
+  acc.items += group.items.length;
+  group.items.forEach(item => {
+    if (item.tone !== "success") {
+      acc.alerts += 1;
+    }
+  });
+  return acc;
+}, {
+  groups: 0,
+  items: 0,
+  alerts: 0
+});
+const toneMap = {
+  success: "success",
+  warning: "warning",
+  danger: "danger",
+  accent: "neutral",
+  neutral: "neutral"
+};
+const StatusBadge = ({
+  tone = "neutral",
+  children
+}) => React.createElement("span", {
+  className: `status-badge ${toneMap[tone] || "neutral"}`
+}, children);
+const ToneDot = ({
+  tone = "accent",
+  className = ""
+}) => React.createElement("span", {
+  className: `state-dot tone-${tone === "neutral" ? "accent" : tone} ${className}`
+});
+const RailCard = ({
+  item
+}) => React.createElement("div", {
+  className: "rail-item signal-line"
+}, React.createElement("div", {
+  className: "flex items-center justify-between"
+}, React.createElement("div", {
+  className: "flex items-center gap-2 text-[10px] font-semibold tracking-[0.16em] uppercase text-slate-500"
+}, React.createElement(Icon, {
+  name: item.icon,
+  className: "w-3.5 h-3.5 text-slate-400"
+}), React.createElement("span", null, item.label)), React.createElement(ToneDot, {
+  tone: item.tone === "neutral" ? "accent" : item.tone
+})), React.createElement("div", {
+  className: "mt-3 flex items-end justify-between gap-3"
+}, React.createElement("div", {
+  className: "font-display text-[20px] leading-none text-slate-900"
+}, item.value), React.createElement("div", {
+  className: "text-[10px] text-slate-500 text-right"
+}, item.meta)));
+const OverviewStat = ({
+  label,
+  value,
+  hint,
+  tone = "accent"
+}) => React.createElement("div", {
+  className: "soft-plate bg-white/80 px-3.5 py-3"
+}, React.createElement("div", {
+  className: "flex items-center justify-between gap-3"
+}, React.createElement("div", {
+  className: "text-[10px] uppercase tracking-[0.18em] text-slate-500"
+}, label), React.createElement(ToneDot, {
+  tone: tone === "neutral" ? "accent" : tone
+})), React.createElement("div", {
+  className: "mt-1.5 font-display text-[20px] leading-none text-slate-900"
+}, value), React.createElement("div", {
+  className: "mt-1 text-[10px] text-slate-500"
+}, hint));
+const DetailGroup = ({
+  title,
+  rows
+}) => React.createElement("div", {
+  className: "detail-block"
+}, React.createElement("div", {
+  className: "text-[10px] uppercase tracking-[0.18em] text-slate-500"
+}, title), React.createElement("div", {
+  className: "row-divider mt-3"
+}, rows.map(row => React.createElement("div", {
+  key: `${title}-${row.label}`,
+  className: "flex items-start justify-between gap-3 py-2.5"
+}, React.createElement("div", {
+  className: "text-[11px] text-slate-500"
+}, row.label), React.createElement("div", {
+  className: `text-right text-[11px] font-medium ${row.mono ? 'font-mono text-slate-700' : row.tone === 'warning' ? 'text-amber-700' : row.tone === 'success' ? 'text-emerald-700' : row.tone === 'danger' ? 'text-red-700' : 'text-slate-800'}`
+}, row.value)))));
+const DetailTableRows = ({
+  rows
+}) => React.createElement("div", {
+  className: "detail-table"
+}, rows.map(row => React.createElement("div", {
+  key: row.label,
+  className: "detail-table-row"
+}, React.createElement("div", {
+  className: "detail-table-label"
+}, row.label), React.createElement("div", {
+  className: `detail-table-value ${row.mono ? "font-mono" : ""} ${row.tone === "warning" ? "text-amber-700" : row.tone === "success" ? "text-emerald-700" : row.tone === "danger" ? "text-red-700" : ""}`
+}, row.value))));
+const DetailSection = ({
+  title,
+  rows,
+  note
+}) => React.createElement("section", {
+  className: "detail-section"
+}, React.createElement("div", {
+  className: "detail-section-title"
+}, title), React.createElement(DetailTableRows, {
+  rows: rows
+}), note && React.createElement("div", {
+  className: `detail-note ${note.tone || ""}`
+}, note.text));
+const DetailAccordion = ({
+  groups
+}) => groups.length > 0 && React.createElement("details", {
+  className: "detail-accordion"
+}, React.createElement("summary", null, React.createElement("span", null, "\u9AD8\u7EA7\u53C2\u6570"), React.createElement("span", {
+  className: "text-slate-400"
+}, "\u2304")), React.createElement("div", {
+  className: "detail-accordion-body"
+}, groups.map(group => React.createElement("div", {
+  key: group.title,
+  className: "detail-accordion-group"
+}, React.createElement("div", {
+  className: "text-[11px] uppercase tracking-[0.18em] text-slate-500"
+}, group.title), React.createElement(DetailTableRows, {
+  rows: group.rows
+})))));
+const findDetailRow = (groups = [], label) => groups.flatMap(group => group.rows || []).find(row => row.label === label);
+const formatMetricValue = metric => metric.hint ? `${metric.value} (${metric.hint})` : metric.value;
+const getToneTextClass = tone => tone === "warning" ? "text-amber-700" : tone === "success" ? "text-emerald-700" : tone === "danger" ? "text-red-700" : "text-slate-900";
+const buildFunctionalCardFields = item => {
+  const ingredientRow = findDetailRow(item.detail.groups, "绑定原料");
+  const enabledRow = findDetailRow(item.detail.groups, "启用状态");
+  if (ingredientRow || enabledRow) {
+    return [{
+      label: "料仓编号",
+      value: item.code,
+      mono: true
+    }, {
+      label: "料仓名称",
+      value: item.name
+    }, {
+      label: "物料名称",
+      value: ingredientRow ? ingredientRow.value : (item.metrics.find(metric => metric.label === "原料") || {}).value || "--"
+    }, {
+      label: "启用状态",
+      value: enabledRow ? enabledRow.value : "--",
+      tone: enabledRow ? enabledRow.tone : undefined
+    }];
+  }
+  return [{
+    label: "节点编号",
+    value: item.code,
+    mono: true
+  }, {
+    label: "节点名称",
+    value: item.name
+  }, {
+    label: "所属模块",
+    value: item.moduleName || "--"
+  }, {
+    label: "当前状态",
+    value: item.status,
+    tone: item.tone
+  }];
+};
+const buildHardwareCardFields = item => [{
+  label: "硬件编号",
+  value: item.code,
+  mono: true
+}, {
+  label: "硬件名称",
+  value: item.name
+}, {
+  label: "所属分类",
+  value: item.groupName || "--"
+}, {
+  label: "当前状态",
+  value: item.status,
+  tone: item.tone
+}];
+const buildFunctionalDetailSections = item => ({
+  header: `${item.name} \u8BE6\u60C5`,
+  meta: `${item.systemName} / ${item.moduleName}`,
+  code: item.code,
+  sections: [{
+    title: "\u57FA\u7840\u4FE1\u606F",
+    rows: [{
+      label: "\u6240\u5C5E\u7CFB\u7EDF",
+      value: item.systemName
+    }, {
+      label: "\u529F\u80FD\u6A21\u5757",
+      value: item.moduleName
+    }, {
+      label: "\u8282\u70B9\u7F16\u53F7",
+      value: item.code,
+      mono: true
+    }, {
+      label: "\u8282\u70B9\u540D\u79F0",
+      value: item.name
+    }, {
+      label: "\u8282\u70B9\u6807\u7B7E",
+      value: item.tags.join(" / ")
+    }, {
+      label: "\u6700\u8FD1\u66F4\u65B0",
+      value: item.metrics[item.metrics.length - 1].value
+    }]
+  }, {
+    title: "\u72B6\u6001\u4FE1\u606F",
+    rows: [{
+      label: "\u5F53\u524D\u72B6\u6001",
+      value: item.status,
+      tone: item.tone
+    }, {
+      label: item.detail.liveMetrics[0].label,
+      value: formatMetricValue(item.detail.liveMetrics[0])
+    }, {
+      label: item.detail.liveMetrics[1].label,
+      value: formatMetricValue(item.detail.liveMetrics[1])
+    }, {
+      label: item.detail.liveMetrics[2].label,
+      value: formatMetricValue(item.detail.liveMetrics[2])
+    }, {
+      label: item.detail.liveMetrics[3].label,
+      value: formatMetricValue(item.detail.liveMetrics[3]),
+      mono: /\d{4}-\d{2}-\d{2}/.test(item.detail.liveMetrics[3].value)
+    }],
+    note: item.detail.alerts.length > 0 ? {
+      text: item.detail.alerts[0],
+      tone: "warning"
+    } : {
+      text: item.detail.subline,
+      tone: "success"
+    }
+  }],
+  advancedGroups: item.detail.groups.slice(2)
+});
+const buildHardwareDetailSections = item => ({
+  header: `${item.name} \u8BE6\u60C5`,
+  meta: item.groupName,
+  code: item.code,
+  sections: [{
+    title: "\u57FA\u7840\u4FE1\u606F",
+    rows: [{
+      label: "\u786C\u4EF6\u5206\u7C7B",
+      value: item.groupName
+    }, {
+      label: "\u5BF9\u8C61\u7F16\u53F7",
+      value: item.code,
+      mono: true
+    }, {
+      label: "\u5BF9\u8C61\u540D\u79F0",
+      value: item.name
+    }, {
+      label: "\u5BF9\u8C61\u6458\u8981",
+      value: item.summary
+    }]
+  }, {
+    title: "\u72B6\u6001\u4FE1\u606F",
+    rows: [{
+      label: "\u5F53\u524D\u72B6\u6001",
+      value: item.status,
+      tone: item.tone
+    }, ...item.metrics.slice(0, 3).map(metric => ({
+      label: metric.label,
+      value: metric.value
+    }))],
+    note: item.detail.alerts.length > 0 ? {
+      text: item.detail.alerts[0],
+      tone: "warning"
+    } : {
+      text: item.detail.subline,
+      tone: "success"
+    }
+  }],
+  advancedGroups: item.detail.groups.slice(2)
+});
+const MetricTile = ({
+  label,
+  value,
+  hint,
+  tone = "neutral"
+}) => React.createElement("div", {
+  className: "metric-card"
+}, React.createElement("div", {
+  className: "flex items-center justify-between gap-3"
+}, React.createElement("div", {
+  className: "text-[10px] uppercase tracking-[0.16em] text-slate-500"
+}, label), React.createElement(ToneDot, {
+  tone: tone === "neutral" ? "accent" : tone
+})), React.createElement("div", {
+  className: "mt-2 font-display text-[22px] leading-none text-slate-900"
+}, value), React.createElement("div", {
+  className: "mt-1 text-[10px] text-slate-500"
+}, hint));
+const CardFieldGrid = ({
+  fields
+}) => React.createElement("div", {
+  className: "card-field-grid"
+}, fields.map(field => React.createElement("div", {
+  key: field.label,
+  className: "card-field"
+}, React.createElement("div", {
+  className: "card-field-label"
+}, field.label), React.createElement("div", {
+  className: `card-field-value ${field.mono ? "font-mono" : ""} ${getToneTextClass(field.tone)}`,
+  title: field.value
+}, field.value))));
+const NodePanel = ({
+  node,
+  active,
+  onClick
+}) => React.createElement("button", {
+  className: `node-panel glow-ring ${active ? "active" : ""}`,
+  onClick: onClick
+}, React.createElement("div", {
+  className: "node-focus"
+}), React.createElement("div", {
+  className: "relative z-[1]"
+}, React.createElement(CardFieldGrid, {
+  fields: buildFunctionalCardFields(node)
+})));
+const HardwareCard = ({
+  item,
+  active,
+  onClick
+}) => React.createElement("button", {
+  className: `hardware-node ${active ? "active" : ""}`,
+  onClick: onClick
+}, React.createElement(CardFieldGrid, {
+  fields: buildHardwareCardFields(item)
+}));
+const HardwareGroupBand = ({
+  group,
+  activeHardwareId,
+  onSelect
+}) => React.createElement("div", {
+  className: "hardware-band"
+}, React.createElement("div", {
+  className: "flex items-start gap-4"
+}, React.createElement("div", {
+  className: "w-10 h-10 rounded-2xl bg-[rgba(255,255,255,0.64)] flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
+}, React.createElement(Icon, {
+  name: group.icon,
+  className: "w-[18px] h-[18px] text-slate-600"
+})), React.createElement("div", {
+  className: "flex-1 min-w-0"
+}, React.createElement("div", null, React.createElement("div", {
+  className: "text-[16px] font-semibold text-slate-900"
+}, group.name), React.createElement("div", {
+  className: "mt-1 text-[11px] text-slate-500"
+}, group.description)), React.createElement("div", {
+  className: "mt-4 grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-4"
+}, group.items.map(item => React.createElement(HardwareCard, {
+  key: item.id,
+  item: hardwareLookup[item.id],
+  active: activeHardwareId === item.id,
+  onClick: () => onSelect(item.id)
+}))))));
+const FunctionalDetailPane = ({
+  item
+}) => {
+  const config = buildFunctionalDetailSections(item);
+  return React.createElement("div", {
+    className: "detail-pane"
+  }, React.createElement("div", {
+    className: "console-panel p-4 xl:p-5"
+  }, React.createElement("div", {
+    className: "flex items-start justify-between gap-4"
+  }, React.createElement("div", {
+    className: "min-w-0"
+  }, React.createElement("div", {
+    className: "text-[12px] text-slate-500"
+  }, config.meta), React.createElement("h3", {
+    className: "mt-2 text-[24px] font-semibold leading-none text-slate-900"
+  }, config.header), React.createElement("div", {
+    className: "mt-2 text-[11px] font-mono text-slate-500"
+  }, config.code)), React.createElement(StatusBadge, {
+    tone: item.tone
+  }, item.status)), React.createElement("div", {
+    className: "mt-6 space-y-4"
+  }, config.sections.map(section => React.createElement(DetailSection, {
+    key: section.title,
+    title: section.title,
+    rows: section.rows,
+    note: section.note
+  }))), React.createElement(DetailAccordion, {
+    groups: config.advancedGroups
+  })));
+};
+const HardwareDetailPane = ({
+  item
+}) => {
+  const config = buildHardwareDetailSections(item);
+  return React.createElement("div", {
+    className: "detail-pane"
+  }, React.createElement("div", {
+    className: "console-panel p-4 xl:p-5"
+  }, React.createElement("div", {
+    className: "flex items-start justify-between gap-4"
+  }, React.createElement("div", {
+    className: "min-w-0"
+  }, React.createElement("div", {
+    className: "text-[12px] text-slate-500"
+  }, config.meta), React.createElement("h3", {
+    className: "mt-2 text-[24px] font-semibold leading-none text-slate-900"
+  }, config.header), React.createElement("div", {
+    className: "mt-2 text-[11px] font-mono text-slate-500"
+  }, config.code)), React.createElement(StatusBadge, {
+    tone: item.tone
+  }, item.status)), React.createElement("div", {
+    className: "mt-6 space-y-4"
+  }, config.sections.map(section => React.createElement(DetailSection, {
+    key: section.title,
+    title: section.title,
+    rows: section.rows,
+    note: section.note
+  }))), React.createElement(DetailAccordion, {
+    groups: config.advancedGroups
+  })));
+};
+const App = () => {
+  const [activeTab, setActiveTab] = useState("module");
+  const [activeNodeId, setActiveNodeId] = useState("hopper-03");
+  const [activeHardwareId, setActiveHardwareId] = useState("board-io-02");
+  const activeNode = moduleLookup[activeNodeId];
+  const activeHardware = hardwareLookup[activeHardwareId];
+  const hardwareHeader = React.createElement("div", {
+    className: "flex flex-col gap-3 md:flex-row md:items-end md:justify-between"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "text-[11px] tracking-[0.16em] text-slate-500"
+  }, "\u786C\u4EF6\u68C0\u67E5"), React.createElement("div", {
+    className: "mt-2 text-[20px] font-semibold text-slate-900"
+  }, "\u786C\u4EF6\u5C5E\u6027\u4E0E\u6392\u969C\u4FE1\u606F"), React.createElement("div", {
+    className: "mt-2 max-w-[760px] text-[12px] leading-5 text-slate-600"
+  }, "\u8FD9\u91CC\u805A\u7126\u677F\u5361\u3001\u4F20\u611F\u5668\u548C\u6267\u884C\u5668\u7684\u72B6\u6001\uFF0C\u9002\u5408\u552E\u540E\u3001\u8FD0\u7EF4\u548C\u6D4B\u8BD5\u67E5\u770B\u786C\u4EF6\u662F\u5426\u7A33\u5B9A\u3002")), React.createElement("div", {
+    className: "data-strip"
+  }, React.createElement("span", null, `${hardwareStats.groups} \u4E2A\u786C\u4EF6\u5206\u7C7B`), React.createElement("span", null, `${hardwareStats.items} \u4E2A\u786C\u4EF6\u5BF9\u8C61`), React.createElement("span", null, `${hardwareStats.alerts} \u4E2A\u5173\u6CE8\u9879`)));
+  const hardwareList = React.createElement("div", {
+    className: "mt-6 space-y-4"
+  }, hardwareGroups.map(group => React.createElement(HardwareGroupBand, {
+    key: group.id,
+    group: group,
+    activeHardwareId: activeHardwareId,
+    onSelect: setActiveHardwareId
+  })));
+  const hardwareLeftPanel = React.createElement("div", {
+    className: "console-panel p-5 xl:p-6"
+  }, hardwareHeader, hardwareList);
+  const hardwarePanel = React.createElement("div", {
+    className: "grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]"
+  }, hardwareLeftPanel, activeHardware && React.createElement(HardwareDetailPane, {
+    item: activeHardware
+  }));
+  return React.createElement("div", {
+    className: "console-shell min-h-screen px-4 py-5 md:px-6 md:py-6 xl:px-8"
+  }, React.createElement("div", {
+    className: "mx-auto max-w-[1680px]"
+  }, React.createElement("div", {
+    className: "mb-3 flex items-center gap-2 text-[11px] text-slate-500"
+  }, React.createElement("span", null, "\u8BBE\u5907\u7BA1\u7406"), React.createElement(Icon, {
+    name: "chevron-right",
+    className: "w-3.5 h-3.5 text-slate-400"
+  }), React.createElement("span", null, "\u8BBE\u5907\u5217\u8868"), React.createElement(Icon, {
+    name: "chevron-right",
+    className: "w-3.5 h-3.5 text-slate-400"
+  }), React.createElement("span", {
+    className: "text-slate-700"
+  }, "\u8336\u996E\u673A A01 \u63A7\u5236\u53F0")), React.createElement("section", {
+    className: "console-panel status-rail scan-surface p-4 md:p-5 xl:p-5"
+  }, React.createElement("div", {
+    className: "flex flex-col gap-4"
+  }, React.createElement("div", {
+    className: "flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
+  }, React.createElement("div", {
+    className: "max-w-[780px]"
+  }, React.createElement("div", {
+    className: "flex items-center gap-2.5"
+  }, React.createElement("div", {
+    className: "online-dot tone-success"
+  }), React.createElement("span", {
+    className: "text-[10px] tracking-[0.14em] text-slate-500"
+  }, "\u8BBE\u5907\u8FD0\u884C\u6982\u89C8")), React.createElement("div", {
+    className: "mt-3 flex flex-col gap-2 md:flex-row md:items-end md:gap-4"
+  }, React.createElement("h1", {
+    className: "font-display text-[24px] leading-[1.1] text-slate-950 md:text-[28px]"
+  }, "\u8336\u996E\u673A A01"), React.createElement("div", {
+    className: "pb-1 text-[11px] tracking-[0.05em] text-slate-500"
+  }, "\u95E8\u5E97 S-755-001 \xB7 \u8BBE\u5907\u7F16\u53F7 A01")), React.createElement("div", {
+    className: "mt-2 text-[12px] text-slate-500"
+  }, "\u65E5\u5E38\u5DE1\u68C0 / \u5F02\u5E38\u6392\u67E5\u89C6\u56FE")), React.createElement("div", {
+    className: "grid w-full max-w-[500px] grid-cols-2 gap-2 md:grid-cols-4"
+  }, React.createElement(OverviewStat, {
+    label: "\u5728\u7EBF\u65F6\u957F",
+    value: "18h 32m",
+    hint: "\u4ECA\u65E5\u6301\u7EED\u5728\u7EBF",
+    tone: "success"
+  }), React.createElement(OverviewStat, {
+    label: "\u4ECA\u65E5\u51FA\u676F",
+    value: "126",
+    hint: "\u8F83\u6628\u65E5 +8%",
+    tone: "accent"
+  }), React.createElement(OverviewStat, {
+    label: "\u5F02\u5E38\u5173\u6CE8",
+    value: "2",
+    hint: "\u7F3A\u6599, \u6821\u51C6\u504F\u5DEE",
+    tone: "warning"
+  }), React.createElement(OverviewStat, {
+    label: "\u914D\u65B9\u540C\u6B65",
+    value: "\u5DF2\u540C\u6B65",
+    hint: "\u4E91\u7AEF\u4E0E\u8BBE\u5907\u7248\u672C\u4E00\u81F4",
+    tone: "success"
+  }))), React.createElement("div", {
+    className: "grid grid-cols-1 gap-2 md:grid-cols-2 xl:grid-cols-6"
+  }, railData.map(item => React.createElement(RailCard, {
+    key: item.label,
+    item: item
+  }))))), React.createElement("div", {
+    className: "mt-5 flex flex-col gap-5"
+  }, React.createElement("div", {
+    className: "flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "text-[11px] tracking-[0.16em] text-slate-500"
+  }, "\u7ED3\u6784\u4E0E\u76D1\u63A7"), React.createElement("div", {
+    className: "mt-2 text-[22px] font-semibold text-slate-900"
+  }, "\u8BBE\u5907\u7ED3\u6784\u4E0E\u76D1\u63A7")), React.createElement("div", {
+    className: "tab-shell w-fit"
+  }, [{
+    id: "whole",
+    label: "整机属性"
+  }, {
+    id: "module",
+    label: "功能模组"
+  }, {
+    id: "hardware",
+    label: "硬件属性"
+  }].map(tab => React.createElement("button", {
+    key: tab.id,
+    className: `tab-chip ${activeTab === tab.id ? "active" : ""}`,
+    onClick: () => setActiveTab(tab.id)
+  }, tab.label)))), activeTab === "whole" && React.createElement("div", {
+    className: "grid grid-cols-1 gap-5 xl:grid-cols-12"
+  }, React.createElement("div", {
+    className: "xl:col-span-7 space-y-5"
+  }, React.createElement("section", {
+    className: "console-panel console-panel-dark p-5 xl:p-6"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between gap-4"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "text-[11px] uppercase tracking-[0.24em] text-slate-500"
+  }, "\u8BBE\u5907\u57FA\u7840\u4FE1\u606F"), React.createElement("div", {
+    className: "mt-2 text-[22px] font-semibold text-slate-900"
+  }, "\u8FD0\u884C\u72B6\u6001\u603B\u89C8")), React.createElement(StatusBadge, {
+    tone: "success"
+  }, "\u5728\u7EBF\u8FD0\u884C\u4E2D")), React.createElement("div", {
+    className: "overview-row mt-6"
+  }, React.createElement("div", {
+    className: "overview-strip"
+  }, React.createElement("div", {
+    className: "text-[11px] uppercase tracking-[0.24em] text-slate-500"
+  }, "\u8EAB\u4EFD\u4E0E\u5F52\u5C5E"), React.createElement("div", {
+    className: "row-divider mt-4"
+  }, [["设备 SN", "TEA-A01-20231024-001", true], ["产品线", "商用智能茶饮机系列"], ["机型", "茶饮机标准款"], ["所属门店", "科技园南区旗舰店"]].map(([label, value, mono]) => React.createElement("div", {
+    key: label,
+    className: "flex items-start justify-between gap-4 py-3"
+  }, React.createElement("div", {
+    className: "text-[12px] text-slate-500"
+  }, label), React.createElement("div", {
+    className: `text-right text-[12px] font-medium ${mono ? "font-mono text-slate-700" : "text-slate-800"}`
+  }, value))))), React.createElement("div", {
+    className: "overview-strip"
+  }, React.createElement("div", {
+    className: "text-[11px] uppercase tracking-[0.24em] text-slate-500"
+  }, "\u8054\u7F51\u4E0E\u7248\u672C"), React.createElement("div", {
+    className: "row-divider mt-4"
+  }, [["连接状态", "在线"], ["IP 地址", "192.168.31.104", true], ["软件版本", "v2.4.1-stable"], ["配方包版本", "recipe_20260514_01", true]].map(([label, value, mono]) => React.createElement("div", {
+    key: label,
+    className: "flex items-start justify-between gap-4 py-3"
+  }, React.createElement("div", {
+    className: "text-[12px] text-slate-500"
+  }, label), React.createElement("div", {
+    className: `text-right text-[12px] font-medium ${mono ? "font-mono text-slate-700" : "text-slate-800"}`
+  }, value))))))), React.createElement("section", {
+    className: "topology-card"
+  }, React.createElement("div", {
+    className: "flex items-center justify-between gap-4"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "text-[11px] tracking-[0.16em] text-slate-500"
+  }, "\u7CFB\u7EDF\u72B6\u6001"), React.createElement("div", {
+    className: "mt-2 text-[20px] font-semibold text-slate-900"
+  }, "\u6838\u5FC3\u6A21\u5757\u72B6\u6001")), React.createElement("div", {
+    className: "text-[12px] text-slate-500"
+  }, "\u5F53\u524D\u8BBE\u5907\u5728\u7EBF\uFF0C\u53EF\u76F4\u63A5\u67E5\u770B\u5173\u6CE8\u9879")), React.createElement("div", {
+    className: "mt-5 space-y-4"
+  }, overviewSystems.map(system => React.createElement("div", {
+    key: system.name,
+    className: "system-band"
+  }, React.createElement("div", {
+    className: "flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
+  }, React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, React.createElement(ToneDot, {
+    tone: system.tone
+  }), React.createElement("div", null, React.createElement("div", {
+    className: "text-[15px] font-semibold text-slate-900"
+  }, system.name), React.createElement("div", {
+    className: "mt-1 text-[12px] text-slate-500"
+  }, system.note))), React.createElement(StatusBadge, {
+    tone: system.tone
+  }, system.status))))))), React.createElement("div", {
+    className: "xl:col-span-5 space-y-5"
+  }, React.createElement("section", {
+    className: "console-panel p-5 xl:p-6"
+  }, React.createElement("div", {
+    className: "text-[11px] uppercase tracking-[0.24em] text-slate-500"
+  }, "\u5B9E\u65F6\u8FD0\u8425\u6307\u6807"), React.createElement("div", {
+    className: "metric-grid mt-5"
+  }, React.createElement(MetricTile, {
+    label: "\u6574\u673A\u72B6\u6001",
+    value: "\u8425\u4E1A\u4E2D",
+    hint: "\u5F85\u673A\u53EF\u63A5\u5355",
+    tone: "success"
+  }), React.createElement(MetricTile, {
+    label: "\u5F53\u524D\u6A21\u5F0F",
+    value: "\u95E8\u5E97\u6A21\u5F0F",
+    hint: "\u95E8\u5E97\u8425\u4E1A\u6A21\u5F0F"
+  }), React.createElement(MetricTile, {
+    label: "\u6D3B\u8DC3\u544A\u8B66",
+    value: "2",
+    hint: "\u7F3A\u6599, \u6821\u51C6\u5173\u6CE8",
+    tone: "warning"
+  }), React.createElement(MetricTile, {
+    label: "\u6700\u8FD1\u51FA\u676F",
+    value: "14:39",
+    hint: "\u4ECA\u65E5\u9AD8\u5CF0\u6B63\u5E38"
+  }))), React.createElement("section", {
+    className: "console-panel p-5 xl:p-6"
+  }, React.createElement("div", {
+    className: "text-[11px] uppercase tracking-[0.24em] text-slate-500"
+  }, "\u540C\u6B65\u4E0E\u4EFB\u52A1"), React.createElement("div", {
+    className: "mt-4 space-y-4"
+  }, React.createElement(DetailGroup, {
+    title: "\u5E73\u53F0\u540C\u6B65",
+    rows: [{
+      label: "属性同步状态",
+      value: "正常",
+      tone: "success"
+    }, {
+      label: "最后上报时间",
+      value: "2026-05-14 14:42:10",
+      mono: true
+    }, {
+      label: "版本校验",
+      value: "2026-05-14 10:32:18"
+    }]
+  }), React.createElement(DetailGroup, {
+    title: "\u4EFB\u52A1\u8F68\u8FF9",
+    rows: [{
+      label: "最近强制刷新",
+      value: "2026-05-14 11:03:24 成功",
+      tone: "success"
+    }, {
+      label: "最近 OTA 结果",
+      value: "2026-05-10 升级成功",
+      tone: "success"
+    }, {
+      label: "待执行命令",
+      value: "0 项"
+    }]
+  }))))), activeTab === "module" && React.createElement("div", {
+    className: "grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_380px]"
+  }, React.createElement("div", {
+    className: "topology-card"
+  }, React.createElement("div", {
+    className: "flex flex-col gap-3 md:flex-row md:items-end md:justify-between"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "text-[11px] tracking-[0.16em] text-slate-500"
+  }, "\u7CFB\u7EDF\u7ED3\u6784"), React.createElement("div", {
+    className: "mt-2 text-[20px] font-semibold text-slate-900"
+  }, "\u529F\u80FD\u6A21\u7EC4\u5217\u8868"), React.createElement("div", {
+    className: "mt-2 max-w-[720px] text-[12px] leading-5 text-slate-600"
+  }, "\u5DE6\u4FA7\u6309\u7CFB\u7EDF\u548C\u6A21\u5757\u5C55\u793A\u8FD0\u884C\u8282\u70B9\uFF0C\u4FBF\u4E8E\u67E5\u770B\u5F53\u524D\u72B6\u6001\u3001\u5B9A\u4F4D\u5173\u6CE8\u9879\u548C\u8FDB\u5165\u8BE6\u60C5\u3002")), React.createElement("div", {
+    className: "data-strip"
+  }, React.createElement("span", null, `${moduleStats.systems} \u4E2A\u4E00\u7EA7\u7CFB\u7EDF`), React.createElement("span", null, `${moduleStats.modules} \u4E2A\u4E8C\u7EA7\u6A21\u5757`), React.createElement("span", null, `${moduleStats.nodes} \u4E2A\u8FD0\u884C\u8282\u70B9`), React.createElement("span", null, `${moduleStats.alerts} \u4E2A\u5173\u6CE8\u9879`))), React.createElement("div", {
+    className: "mt-6 space-y-5"
+  }, moduleSystems.map(system => React.createElement("div", {
+    key: system.id,
+    className: "system-band"
+  }, React.createElement("div", {
+    className: "flex flex-col gap-4"
+  }, React.createElement("div", {
+    className: "flex flex-col gap-4 md:flex-row md:items-start md:justify-between"
+  }, React.createElement("div", {
+    className: "flex items-start gap-4"
+  }, React.createElement("div", {
+    className: `online-dot tone-${system.tone === "neutral" ? "accent" : system.tone} mt-1`
+  }), React.createElement("div", null, React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, React.createElement("div", {
+    className: "w-9 h-9 rounded-2xl bg-[rgba(255,255,255,0.6)] flex items-center justify-center shadow-[inset_0_1px_0_rgba(255,255,255,0.7)]"
+  }, React.createElement(Icon, {
+    name: system.icon,
+    className: "w-[18px] h-[18px] text-slate-600"
+  })), React.createElement("div", null, React.createElement("div", {
+    className: "text-[16px] font-semibold text-slate-900"
+  }, system.name), React.createElement("div", {
+    className: "text-[11px] text-slate-500"
+  }, system.description))))), React.createElement("div", {
+    className: "flex items-center gap-3"
+  }, React.createElement(StatusBadge, {
+    tone: system.tone
+  }, system.note))), React.createElement("div", {
+    className: "space-y-4"
+  }, system.modules.map(module => React.createElement("div", {
+    key: module.id,
+    className: "module-lane"
+  }, React.createElement("div", {
+    className: "mb-3 flex flex-col gap-2 md:flex-row md:items-center md:justify-between"
+  }, React.createElement("div", null, React.createElement("div", {
+    className: "text-[11px] uppercase tracking-[0.18em] text-slate-500"
+  }, module.name), React.createElement("div", {
+    className: "mt-1 text-[11px] text-slate-600"
+  }, module.summary))), React.createElement("div", {
+    className: "grid grid-cols-1 gap-2 md:grid-cols-2 lg:grid-cols-4"
+  }, module.nodes.map(node => React.createElement(NodePanel, {
+    key: node.id,
+    node: {
+      ...node,
+      moduleName: module.name
+    },
+    active: activeNodeId === node.id,
+    onClick: () => setActiveNodeId(node.id)
+  }))))))))))), activeNode && React.createElement(FunctionalDetailPane, {
+    item: activeNode
+  })), activeTab === "hardware" && hardwarePanel)));
+};
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(React.createElement(App, null));
+</script>
+</body>
+</html>
