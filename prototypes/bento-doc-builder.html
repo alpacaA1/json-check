@@ -91,6 +91,18 @@
     font-size: 16px;
     font-weight: 750;
     color: var(--text-main);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-count-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 12px;
+    background: var(--accent-bg);
+    color: var(--accent-dark);
   }
 
   .header-actions {
@@ -98,6 +110,7 @@
     align-items: center;
     gap: 8px;
     flex-wrap: wrap;
+    position: relative;
   }
 
   button {
@@ -128,6 +141,36 @@
   }
 
   button.accent:hover { opacity: 0.92; }
+
+  /* Add Card Popover Menu */
+  .add-card-popover {
+    position: absolute;
+    top: 42px;
+    left: 0;
+    z-index: 50;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 4px;
+    padding: 8px;
+    width: 280px;
+  }
+
+  .add-card-popover button {
+    min-height: 30px;
+    padding: 0 8px;
+    font-size: 11px;
+    justify-content: flex-start;
+    border: 0;
+    background: transparent;
+  }
+  .add-card-popover button:hover {
+    background: var(--accent-bg);
+    color: var(--accent-dark);
+  }
 
   /* Onboarding Banner */
   .onboarding-banner {
@@ -245,13 +288,13 @@
   }
 
   /* Grid Fractional Spans */
-  .span-05x { grid-column: span 3; min-height: 180px; padding: 18px; } /* 0.5x 迷你卡 (1/4宽) */
-  .span-075x { grid-column: span 4; min-height: 190px; padding: 20px; } /* 0.75x 紧凑卡 (1/3宽) */
-  .span-1x1 { grid-column: span 6; min-height: 220px; }                /* 1.0x 标准卡 (1/2宽) */
-  .span-15x { grid-column: span 9; min-height: 220px; }                /* 1.5x 宽屏卡 (3/4宽) */
-  .span-2x1 { grid-column: span 12; min-height: 220px; }               /* 2.0x 整行卡 (全宽) */
-  .span-1x2 { grid-column: span 6; min-height: 420px; }                /* 1x2 纵向加高卡 */
-  .span-2x2 { grid-column: span 12; min-height: 420px; }               /* 2x2 超大方卡 */
+  .span-05x { grid-column: span 3; min-height: 180px; padding: 18px; }
+  .span-075x { grid-column: span 4; min-height: 190px; padding: 20px; }
+  .span-1x1 { grid-column: span 6; min-height: 220px; }
+  .span-15x { grid-column: span 9; min-height: 220px; }
+  .span-2x1 { grid-column: span 12; min-height: 220px; }
+  .span-1x2 { grid-column: span 6; min-height: 420px; }
+  .span-2x2 { grid-column: span 12; min-height: 420px; }
 
   @media (max-width: 900px) {
     .span-05x, .span-075x, .span-1x1, .span-15x, .span-1x2, .span-2x1, .span-2x2 { grid-column: span 12; }
@@ -350,14 +393,30 @@
     color: var(--text-muted);
   }
 
-  /* Card Inner Contents */
+  /* Card Inner Contents & Badges */
+  .card-top-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 6px;
+  }
+
+  .type-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.05);
+    color: var(--text-muted);
+  }
+  body.dark-theme .type-badge { background: rgba(255,255,255,0.08); }
+
   .card-kicker {
     font-size: 11px;
     font-weight: 750;
     color: var(--accent-dark);
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    margin-bottom: 6px;
     outline: none;
   }
 
@@ -400,9 +459,9 @@
     background: rgba(0,0,0,0.02);
     transition: background 0.2s, border-color 0.2s;
   }
-  .image-dropzone:hover {
+  .image-dropzone:hover, .image-dropzone.drag-over-img {
     border-color: var(--accent);
-    background: rgba(223, 106, 75, 0.05);
+    background: rgba(223, 106, 75, 0.08);
   }
   .image-dropzone p {
     font-size: 11px;
@@ -469,17 +528,21 @@
   .timeline-item {
     position: relative;
     font-size: 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
   }
   .timeline-item:before {
     content: "";
     position: absolute;
     left: -19px;
-    top: 4px;
+    top: 6px;
     width: 8px;
     height: 8px;
     border-radius: 50%;
     background: var(--accent);
   }
+  .timeline-item-text { flex: 1; outline: none; }
 
   /* Dark Variant Card */
   .bento-card.dark-card {
@@ -572,7 +635,7 @@
   }
   .add-check-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* Toast Notification */
+  /* Smooth Toast Notification */
   .toast {
     position: fixed;
     z-index: 100;
@@ -585,7 +648,15 @@
     font-size: 12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.25);
     display: none;
+    animation: toastFade 0.3s cubic-bezier(0.16, 1, 0.3, 1);
   }
+
+  @keyframes toastFade {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-toolbar-hidden { display: none !important; }
 </style>
 </head>
 <body>
@@ -593,22 +664,29 @@
 <header>
   <div class="header-brand">
     <b>🍱</b>
-    <h1>Bento Doc Builder</h1>
+    <h1>Bento Doc Builder <span class="card-count-badge" id="cardCountBadge">7 张卡片</span></h1>
   </div>
   <div class="header-actions">
     <button onclick="toggleTheme()">🌓 主题</button>
-    <button onclick="addCard('metric', 'span-05x')">➕ 0.5x 指标</button>
-    <button onclick="addCard('graphic', 'span-1x1')">➕ 图文卡</button>
-    <button onclick="addCard('code', 'span-075x')">➕ 代码卡</button>
-    <button onclick="addCard('diff', 'span-2x1')">➕ 对比卡</button>
-    <button onclick="addCard('notice', 'span-075x')">➕ 警示卡</button>
-    <button onclick="addCard('checklist', 'span-1x1')">➕ 清单卡</button>
-    <button onclick="addCard('link', 'span-05x')">➕ 外链卡</button>
-    <button onclick="addCard('member', 'span-05x')">➕ 负责人</button>
-    <button onclick="addCard('timeline', 'span-075x')">➕ 时间线</button>
+    <button onclick="undo()">↩️ 撤销</button>
+    <button onclick="redo()">↪️ 重做</button>
+    <button onclick="toggleAddMenu()" class="accent">➕ 添加卡片 ▾</button>
     <button onclick="exportJson()">💾 保存草稿</button>
     <button onclick="document.getElementById('jsonFileInput').click()">📂 载入草稿</button>
     <button class="accent" onclick="exportStandaloneHtml()">🚀 导出 HTML</button>
+
+    <!-- Add Card Menu Popover -->
+    <div class="add-card-popover" id="addCardMenu" style="display:none">
+      <button onclick="addCard('metric', 'span-05x')">📊 0.5x 指标卡</button>
+      <button onclick="addCard('graphic', 'span-1x1')">📸 图文/截图卡</button>
+      <button onclick="addCard('code', 'span-075x')">💻 代码/协议卡</button>
+      <button onclick="addCard('diff', 'span-2x1')">⚖️ 新旧对比卡</button>
+      <button onclick="addCard('notice', 'span-075x')">⚠️ 警示限制卡</button>
+      <button onclick="addCard('checklist', 'span-1x1')">📋 SOP 清单卡</button>
+      <button onclick="addCard('link', 'span-05x')">🔗 外链资源卡</button>
+      <button onclick="addCard('member', 'span-05x')">👤 负责人卡</button>
+      <button onclick="addCard('timeline', 'span-075x')">📜 里程碑时间线</button>
+    </div>
   </div>
 </header>
 
@@ -616,7 +694,7 @@
 
 <!-- Onboarding Hint Banner -->
 <div class="onboarding-banner" id="hintBanner">
-  <span>💡 支持 <b>0.5x 迷你卡 (1/4宽)</b> 与 <b>0.75x 紧凑卡 (1/3宽)</b> 等尺寸；按住 <b>⠿ 把手</b> 拖拽排序。</span>
+  <span>💡 支持 <b>0.5x 迷你卡 (1/4宽)</b> 与 <b>0.75x 紧凑卡 (1/3宽)</b> 等尺寸；按住 <b>⠿ 把手</b> 拖拽排序；支持 Ctrl+Z 撤销。</span>
   <button onclick="document.getElementById('hintBanner').style.display='none'">✕</button>
 </div>
 
@@ -624,12 +702,12 @@
   <!-- Document Metadata Header -->
   <section class="doc-header-block">
     <div class="doc-meta-tags" id="docTags">
-      <span class="tag-badge" contenteditable="true">P0 核心需求</span>
-      <span class="tag-badge" contenteditable="true">IoT 平台 v2.4</span>
-      <span class="tag-badge" contenteditable="true">茶饮机/咖啡机专有</span>
+      <span class="tag-badge" contenteditable="true" onblur="saveState()">P0 核心需求</span>
+      <span class="tag-badge" contenteditable="true" onblur="saveState()">IoT 平台 v2.4</span>
+      <span class="tag-badge" contenteditable="true" onblur="saveState()">茶饮机/咖啡机专有</span>
     </div>
-    <div class="doc-title" contenteditable="true" id="docTitle">茶饮机全自动校准 PRD (上线说明文档)</div>
-    <div class="doc-subtitle" contenteditable="true" id="docSubtitle">实现多料仓脉冲精确扣减、出料误差动态补偿算法与闭环 CIP 清洗提醒功能。</div>
+    <div class="doc-title" contenteditable="true" id="docTitle" onblur="saveState()">茶饮机全自动校准 PRD (上线说明文档)</div>
+    <div class="doc-subtitle" contenteditable="true" id="docSubtitle" onblur="saveState()">实现多料仓脉冲精确扣减、出料误差动态补偿算法与闭环 CIP 清洗提醒功能。</div>
   </section>
 
   <!-- Bento Grid Cards Container -->
@@ -705,22 +783,90 @@
     },
     {
       id: 'c7',
-      type: 'member',
-      span: 'span-05x',
+      type: 'timeline',
+      span: 'span-075x',
       dark: false,
-      kicker: 'OWNER',
-      title: '需求负责人',
-      body: '接口变动请联系：',
-      memberName: '张三',
-      memberRole: 'IoT 产品线 Owner'
+      kicker: 'TIMELINE',
+      title: '发布里程碑规划',
+      body: '灰度与上线节点：',
+      timelineItems: ['2026-08-15: 需求评审完成', '2026-08-20: 灰度 5 台连锁门店', '2026-08-30: 全国门店全量上线']
     }
   ];
+
+  // History Stack for Undo/Redo
+  let historyStack = [];
+  let redoStack = [];
+
+  function saveState() {
+    const currentState = JSON.stringify({
+      title: document.getElementById('docTitle').innerText,
+      subtitle: document.getElementById('docSubtitle').innerText,
+      cards: cards
+    });
+    if (historyStack.length === 0 || historyStack[historyStack.length - 1] !== currentState) {
+      historyStack.push(currentState);
+      if (historyStack.length > 30) historyStack.shift();
+      redoStack = [];
+    }
+  }
+
+  function undo() {
+    if (historyStack.length > 1) {
+      redoStack.push(historyStack.pop());
+      const prevState = JSON.parse(historyStack[historyStack.length - 1]);
+      applyState(prevState);
+      showToast('已撤销');
+    }
+  }
+
+  function redo() {
+    if (redoStack.length > 0) {
+      const nextStateStr = redoStack.pop();
+      historyStack.push(nextStateStr);
+      applyState(JSON.parse(nextStateStr));
+      showToast('已重做');
+    }
+  }
+
+  function applyState(state) {
+    if (state.title) document.getElementById('docTitle').innerText = state.title;
+    if (state.subtitle) document.getElementById('docSubtitle').innerText = state.subtitle;
+    if (Array.isArray(state.cards)) cards = state.cards;
+    renderGrid();
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
+      if (e.shiftKey) redo(); else undo();
+    }
+  });
+
+  function updateCardField(id, field, val) {
+    const c = cards.find(x => x.id === id);
+    if (c) {
+      c[field] = val;
+      saveState();
+    }
+  }
+
+  function toggleAddMenu() {
+    const menu = document.getElementById('addCardMenu');
+    menu.style.display = menu.style.display === 'none' ? 'grid' : 'none';
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = e.target.closest('button');
+    const menu = document.getElementById('addCardMenu');
+    if (!btn || !btn.getAttribute('onclick')?.includes('toggleAddMenu')) {
+      if (menu && !menu.contains(e.target)) menu.style.display = 'none';
+    }
+  });
 
   function showToast(msg) {
     const t = document.getElementById('toastMsg');
     t.innerText = msg;
     t.style.display = 'block';
-    setTimeout(() => { t.style.display = 'none'; }, 2600);
+    setTimeout(() => { t.style.display = 'none'; }, 2400);
   }
 
   function toggleTheme() {
@@ -735,6 +881,7 @@
       cardEl.classList.remove(c.span);
       cardEl.classList.add(newSpan);
       c.span = newSpan;
+      saveState();
       showToast('已更改卡片尺寸');
     }
   }
@@ -745,6 +892,7 @@
     if (cardEl && c) {
       c.dark = !c.dark;
       cardEl.classList.toggle('dark-card', c.dark);
+      saveState();
     }
   }
 
@@ -753,6 +901,8 @@
     if (cardEl) {
       cardEl.remove();
       cards = cards.filter(x => x.id !== id);
+      saveState();
+      updateCardCountBadge();
       showToast('已移除卡片');
     }
   }
@@ -764,6 +914,7 @@
       const c = cards.find(x => x.id === cardId);
       if (c) {
         c.imageUrl = e.target.result;
+        saveState();
         renderGrid();
         showToast('图片上传成功');
       }
@@ -775,6 +926,7 @@
     const c = cards.find(x => x.id === cardId);
     if (c) {
       c.imageUrl = '';
+      saveState();
       renderGrid();
       showToast('已移除图片');
     }
@@ -785,6 +937,7 @@
     if (c) {
       if (!c.items) c.items = [];
       c.items.push('新增确认步骤');
+      saveState();
       renderGrid();
     }
   }
@@ -793,7 +946,35 @@
     const c = cards.find(x => x.id === cardId);
     if (c && c.items) {
       c.items.splice(idx, 1);
+      saveState();
       renderGrid();
+    }
+  }
+
+  function addTimelineItem(id) {
+    const c = cards.find(x => x.id === id);
+    if (c) {
+      if (!c.timelineItems) c.timelineItems = [];
+      c.timelineItems.push('新阶段节点');
+      saveState();
+      renderGrid();
+    }
+  }
+
+  function removeTimelineItem(cardId, idx) {
+    const c = cards.find(x => x.id === cardId);
+    if (c && c.timelineItems) {
+      c.timelineItems.splice(idx, 1);
+      saveState();
+      renderGrid();
+    }
+  }
+
+  function updateTimelineItem(cardId, idx, text) {
+    const c = cards.find(x => x.id === cardId);
+    if (c && c.timelineItems) {
+      c.timelineItems[idx] = text;
+      saveState();
     }
   }
 
@@ -831,6 +1012,7 @@
       if (fromIdx !== -1 && toIdx !== -1) {
         const movedItem = cards.splice(fromIdx, 1)[0];
         cards.splice(toIdx, 0, movedItem);
+        saveState();
         renderGrid();
         showToast('已调整卡片顺序');
       }
@@ -843,19 +1025,39 @@
     document.querySelectorAll('.bento-card').forEach(el => el.classList.remove('drag-over'));
   }
 
+  function updateCardCountBadge() {
+    document.getElementById('cardCountBadge').innerText = `${cards.length} 张卡片`;
+  }
+
+  function getTypeBadge(type) {
+    const map = {
+      metric: '📊 指标',
+      graphic: '📸 图文',
+      code: '💻 代码',
+      diff: '⚖️ 对比',
+      notice: '⚠️ 警示',
+      checklist: '📋 清单',
+      link: '🔗 外链',
+      member: '👤 负责人',
+      timeline: '📜 时间线'
+    };
+    return map[type] || '卡片';
+  }
+
   function renderGrid() {
+    updateCardCountBadge();
     const grid = document.getElementById('bentoGrid');
     grid.innerHTML = cards.map((card) => {
       let contentHtml = '';
 
       if (card.type === 'metric') {
         contentHtml = `
-          <div class="metric-number" contenteditable="true" onblur="card.number=this.innerText">${card.number}</div>
-          <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
+          <div class="metric-number" contenteditable="true" onblur="updateCardField('${card.id}', 'number', this.innerText)">${card.number}</div>
+          <div class="card-body" contenteditable="true" onblur="updateCardField('${card.id}', 'body', this.innerText)">${card.body}</div>
         `;
       } else if (card.type === 'graphic') {
         contentHtml = `
-          <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
+          <div class="card-body" contenteditable="true" onblur="updateCardField('${card.id}', 'body', this.innerText)">${card.body}</div>
           ${card.imageUrl ? `
             <div>
               <img class="card-img-preview" src="${card.imageUrl}" alt="Uploaded image" />
@@ -864,8 +1066,8 @@
               </div>
             </div>
           ` : `
-            <div class="image-dropzone" onclick="document.getElementById('imgInput_${card.id}').click()">
-              🖼️ 点击上传图片 / 粘贴图片 URL
+            <div class="image-dropzone" id="dz_${card.id}" onclick="document.getElementById('imgInput_${card.id}').click()">
+              🖼️ 点击上传图片 / 拖拽图片到此处
               <p>支持 JPG, PNG, GIF, SVG</p>
               <input type="file" id="imgInput_${card.id}" accept="image/*" style="display:none" onchange="handleImageUpload('${card.id}', this.files[0])" />
             </div>
@@ -873,56 +1075,61 @@
         `;
       } else if (card.type === 'code') {
         contentHtml = `
-          <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
-          <div class="code-block" contenteditable="true" onblur="card.code=this.innerText">${card.code || ''}</div>
+          <div class="card-body" contenteditable="true" onblur="updateCardField('${card.id}', 'body', this.innerText)">${card.body}</div>
+          <div class="code-block" contenteditable="true" onblur="updateCardField('${card.id}', 'code', this.innerText)">${card.code || ''}</div>
         `;
       } else if (card.type === 'diff') {
         contentHtml = `
-          <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
+          <div class="card-body" contenteditable="true" onblur="updateCardField('${card.id}', 'body', this.innerText)">${card.body}</div>
           <div class="diff-container">
-            <div class="diff-box diff-old" contenteditable="true" onblur="card.oldText=this.innerText">${card.oldText}</div>
-            <div class="diff-box diff-new" contenteditable="true" onblur="card.newText=this.innerText">${card.newText}</div>
+            <div class="diff-box diff-old" contenteditable="true" onblur="updateCardField('${card.id}', 'oldText', this.innerText)">${card.oldText}</div>
+            <div class="diff-box diff-new" contenteditable="true" onblur="updateCardField('${card.id}', 'newText', this.innerText)">${card.newText}</div>
           </div>
         `;
       } else if (card.type === 'notice') {
         contentHtml = `
-          <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
-          <div class="alert-box" contenteditable="true" onblur="card.alert=this.innerText">${card.alert}</div>
+          <div class="card-body" contenteditable="true" onblur="updateCardField('${card.id}', 'body', this.innerText)">${card.body}</div>
+          <div class="alert-box" contenteditable="true" onblur="updateCardField('${card.id}', 'alert', this.innerText)">${card.alert}</div>
         `;
       } else if (card.type === 'link') {
         contentHtml = `
-          <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
+          <div class="card-body" contenteditable="true" onblur="updateCardField('${card.id}', 'body', this.innerText)">${card.body}</div>
           <a class="link-card-box" href="${card.linkUrl || '#'}" target="_blank">
-            <span contenteditable="true" onblur="card.linkTitle=this.innerText">${card.linkTitle || '点击查看 PRD 原型'}</span> ➔
+            <span contenteditable="true" onblur="updateCardField('${card.id}', 'linkTitle', this.innerText)">${card.linkTitle || '点击查看 PRD 原型'}</span> ➔
           </a>
         `;
       } else if (card.type === 'member') {
         contentHtml = `
-          <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
+          <div class="card-body" contenteditable="true" onblur="updateCardField('${card.id}', 'body', this.innerText)">${card.body}</div>
           <div class="member-box">
             <div class="member-avatar">${(card.memberName || '张')[0]}</div>
             <div>
-              <strong contenteditable="true" onblur="card.memberName=this.innerText">${card.memberName || '张三'}</strong>
-              <div style="font-size:11px; opacity:0.7;" contenteditable="true" onblur="card.memberRole=this.innerText">${card.memberRole || '需求负责人'}</div>
+              <strong contenteditable="true" onblur="updateCardField('${card.id}', 'memberName', this.innerText)">${card.memberName || '张三'}</strong>
+              <div style="font-size:11px; opacity:0.7;" contenteditable="true" onblur="updateCardField('${card.id}', 'memberRole', this.innerText)">${card.memberRole || '需求负责人'}</div>
             </div>
           </div>
         `;
       } else if (card.type === 'timeline') {
         contentHtml = `
-          <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
+          <div class="card-body" contenteditable="true" onblur="updateCardField('${card.id}', 'body', this.innerText)">${card.body}</div>
           <div class="timeline-list">
-            <div class="timeline-item" contenteditable="true">2026-08-15: 需求评审</div>
-            <div class="timeline-item" contenteditable="true">2026-08-30: 全量上线</div>
+            ${(card.timelineItems || []).map((tItem, tIdx) => `
+              <div class="timeline-item">
+                <span class="timeline-item-text" contenteditable="true" onblur="updateTimelineItem('${card.id}', ${tIdx}, this.innerText)">${tItem}</span>
+                <button class="check-item-del" onclick="removeTimelineItem('${card.id}', ${tIdx})">✕</button>
+              </div>
+            `).join('')}
+            <button class="add-check-btn" onclick="addTimelineItem('${card.id}')">➕ 添加节点</button>
           </div>
         `;
       } else if (card.type === 'checklist') {
         contentHtml = `
-          <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
+          <div class="card-body" contenteditable="true" onblur="updateCardField('${card.id}', 'body', this.innerText)">${card.body}</div>
           <div class="checklist">
             ${(card.items || []).map((item, itemIdx) => `
               <div class="check-item">
                 <input type="checkbox" checked />
-                <span class="check-item-text" contenteditable="true" onblur="card.items[${itemIdx}]=this.innerText">${item}</span>
+                <span class="check-item-text" contenteditable="true" onblur="const c=cards.find(x=>x.id==='${card.id}'); if(c&&c.items) { c.items[${itemIdx}]=this.innerText; saveState(); }">${item}</span>
                 <button class="check-item-del" onclick="removeChecklistItem('${card.id}', ${itemIdx})">✕</button>
               </div>
             `).join('')}
@@ -931,15 +1138,18 @@
         `;
       } else {
         contentHtml = `
-          <div class="card-body" contenteditable="true" onblur="card.body=this.innerText">${card.body}</div>
+          <div class="card-body" contenteditable="true" onblur="updateCardField('${card.id}', 'body', this.innerText)">${card.body}</div>
         `;
       }
 
       return `
         <div class="bento-card ${card.span} ${card.dark ? 'dark-card' : ''}" id="${card.id}">
           <div>
-            <div class="card-kicker" contenteditable="true" onblur="card.kicker=this.innerText">${card.kicker}</div>
-            <div class="card-title" contenteditable="true" onblur="card.title=this.innerText">${card.title}</div>
+            <div class="card-top-meta">
+              <span class="type-badge">${getTypeBadge(card.type)}</span>
+              <div class="card-kicker" contenteditable="true" onblur="updateCardField('${card.id}', 'kicker', this.innerText)">${card.kicker}</div>
+            </div>
+            <div class="card-title" contenteditable="true" onblur="updateCardField('${card.id}', 'title', this.innerText)">${card.title}</div>
             ${contentHtml}
           </div>
           <div class="card-toolbar">
@@ -963,7 +1173,7 @@
       `;
     }).join('');
 
-    // Attach Drag Handle Listeners Only
+    // Drag Handle & Dropzone Events
     document.querySelectorAll('.drag-handle').forEach(handle => {
       handle.addEventListener('dragstart', handleDragStart);
       handle.addEventListener('dragend', handleDragEnd);
@@ -974,14 +1184,28 @@
       cardEl.addEventListener('dragleave', handleDragLeave);
       cardEl.addEventListener('drop', handleDrop);
     });
+
+    // Image Dropzone Drag and Drop File Events
+    document.querySelectorAll('.image-dropzone').forEach(dz => {
+      const cardId = dz.id.replace('dz_', '');
+      dz.addEventListener('dragover', (e) => { e.preventDefault(); dz.classList.add('drag-over-img'); });
+      dz.addEventListener('dragleave', () => dz.classList.remove('drag-over-img'));
+      dz.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dz.classList.remove('drag-over-img');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          handleImageUpload(cardId, e.dataTransfer.files[0]);
+        }
+      });
+    });
   }
 
   function addCard(type, defaultSpan = 'span-1x1') {
     const id = 'c' + Date.now();
     if (type === 'metric') {
-      cards.push({ id, type, span: defaultSpan, kicker: 'METRIC', title: '指标', number: '99%', body: '描述' });
+      cards.push({ id, type, span: defaultSpan, kicker: 'METRIC', title: '核心指标', number: '99%', body: '指标描述' });
     } else if (type === 'graphic') {
-      cards.push({ id, type, span: defaultSpan, kicker: 'GRAPHIC', title: '新功能演示', body: '上传原型截图：', imageUrl: '' });
+      cards.push({ id, type, span: defaultSpan, kicker: 'GRAPHIC', title: '新功能演示', body: '拖拽或点击上传截图：', imageUrl: '' });
     } else if (type === 'code') {
       cards.push({ id, type, span: defaultSpan, dark: true, kicker: 'CODE SPEC', title: '协议规范', body: '数据描述：', code: '{\n  "status": "ok"\n}' });
     } else if (type === 'diff') {
@@ -993,11 +1217,13 @@
     } else if (type === 'member') {
       cards.push({ id, type, span: defaultSpan, kicker: 'OWNER', title: '负责人', body: '干系人：', memberName: '李四', memberRole: 'IoT 平台研发' });
     } else if (type === 'timeline') {
-      cards.push({ id, type, span: defaultSpan, kicker: 'TIMELINE', title: '时间线', body: '发布节点：' });
+      cards.push({ id, type, span: defaultSpan, kicker: 'TIMELINE', title: '发布里程碑', body: '发布节点：', timelineItems: ['节点一', '节点二'] });
     } else {
       cards.push({ id, type: 'checklist', span: defaultSpan, kicker: 'CHECKLIST', title: '确认清单', body: '确认项：', items: ['步骤一确认', '步骤二确认'] });
     }
+    saveState();
     renderGrid();
+    document.getElementById('addCardMenu').style.display = 'none';
     showToast('已添加新卡片');
   }
 
@@ -1025,6 +1251,7 @@
         if (data.title) document.getElementById('docTitle').innerText = data.title;
         if (data.subtitle) document.getElementById('docSubtitle').innerText = data.subtitle;
         if (Array.isArray(data.cards)) cards = data.cards;
+        saveState();
         renderGrid();
         showToast('草稿载入成功');
       } catch {
@@ -1037,12 +1264,15 @@
 
   function exportStandaloneHtml() {
     const title = document.getElementById('docTitle').innerText;
+    const today = new Date().toISOString().slice(0, 10);
     const htmlContent = document.documentElement.outerHTML
-      .replace(/<header>[\s\S]*?<\/header>/, '<header style="padding: 16px 32px; background: var(--panel); border-bottom: 1px solid var(--border);"><h2 style="font-size:16px;">🍱 ' + title + '</h2></header>')
+      .replace(/<header>[\s\S]*?<\/header>/, '<header style="padding: 16px 32px; background: var(--panel); border-bottom: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center;"><h2 style="font-size:16px;">🍱 ' + title + '</h2><span style="font-size:12px; color:var(--text-muted);">由 Bento Doc Builder 生成 · ' + today + '</span></header>')
       .replace(/<div class="onboarding-banner"[\s\S]*?<\/div>/, '')
       .replace(/card-toolbar/g, 'card-toolbar-hidden')
       .replace(/contenteditable="true"/g, '')
-      .replace(/<button class="img-actions"[\s\S]*?<\/button>/g, '');
+      .replace(/<button class="img-actions"[\s\S]*?<\/button>/g, '')
+      .replace(/<button class="add-check-btn"[\s\S]*?<\/button>/g, '')
+      .replace(/<button class="check-item-del"[\s\S]*?<\/button>/g, '');
 
     const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
     const a = document.createElement('a');
@@ -1052,6 +1282,8 @@
     showToast('已导出独立 HTML 网页！');
   }
 
+  // Initialize
+  saveState();
   renderGrid();
 </script>
 
