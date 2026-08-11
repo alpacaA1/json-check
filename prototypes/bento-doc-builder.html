@@ -257,28 +257,30 @@
     .span-05x, .span-075x, .span-1x1, .span-15x, .span-1x2, .span-2x1, .span-2x2 { grid-column: span 12; }
   }
 
-  /* Bottom Floating Card Toolbar */
+  /* Bottom Compact Floating Card Toolbar (Never Wrap) */
   .card-toolbar {
     position: absolute;
-    bottom: 12px;
+    bottom: 10px;
     left: 50%;
-    transform: translateX(-50%) translateY(10px);
+    transform: translateX(-50%) translateY(8px);
     display: flex;
     align-items: center;
-    gap: 4px;
+    gap: 3px;
+    white-space: nowrap;
+    max-width: calc(100% - 16px);
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.2s ease, transform 0.2s ease;
-    background: rgba(255, 255, 255, 0.94);
-    padding: 4px 10px;
+    background: rgba(255, 255, 255, 0.96);
+    padding: 3px 6px;
     border: 1px solid var(--border);
     border-radius: 999px;
-    box-shadow: 0 8px 24px rgba(0,0,0,0.14);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
     z-index: 20;
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(10px);
   }
   body.dark-theme .card-toolbar {
-    background: rgba(23, 27, 34, 0.94);
+    background: rgba(23, 27, 34, 0.96);
   }
 
   .bento-card:hover .card-toolbar {
@@ -289,37 +291,63 @@
 
   .drag-handle {
     cursor: grab;
-    padding: 0 6px;
+    padding: 0 4px;
     color: var(--text-muted);
-    font-size: 14px;
+    font-size: 13px;
     user-select: none;
     display: flex;
     align-items: center;
   }
   .drag-handle:active { cursor: grabbing; }
 
-  .tool-btn {
-    min-height: 28px;
-    padding: 0 8px;
-    font-size: 11px;
+  .tool-btn-icon {
+    min-height: 26px;
+    width: 26px;
+    padding: 0;
+    font-size: 12px;
     border: none;
-    border-radius: 999px;
+    border-radius: 50%;
     background: transparent;
     color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
   }
-  .tool-btn:hover { color: var(--text-main); background: rgba(0,0,0,0.06); }
-  body.dark-theme .tool-btn:hover { background: rgba(255,255,255,0.1); }
+  .tool-btn-icon:hover { color: var(--text-main); background: rgba(0,0,0,0.06); }
+  body.dark-theme .tool-btn-icon:hover { background: rgba(255,255,255,0.1); }
+  .tool-btn-icon.del-btn:hover { color: #e5484d; background: rgba(229, 72, 77, 0.1); }
 
-  /* Size Selector Select Dropdown */
+  /* Sleek Custom Select Dropdown UI */
+  .size-select-wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
   .size-select {
+    appearance: none;
+    -webkit-appearance: none;
     min-height: 26px;
-    padding: 0 6px;
+    padding: 0 18px 0 8px;
     font-size: 11px;
+    font-weight: 650;
     border: 1px solid var(--border);
-    border-radius: 6px;
+    border-radius: 14px;
     background: var(--panel);
     color: var(--text-main);
     cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .size-select:hover {
+    border-color: var(--border-hover);
+    background: var(--panel-hover);
+  }
+  .size-select-arrow {
+    position: absolute;
+    right: 6px;
+    pointer-events: none;
+    font-size: 9px;
+    color: var(--text-muted);
   }
 
   /* Card Inner Contents */
@@ -588,7 +616,7 @@
 
 <!-- Onboarding Hint Banner -->
 <div class="onboarding-banner" id="hintBanner">
-  <span>💡 支持 <b>0.5x 迷你卡 (1/4宽)</b> 与 <b>0.75x 紧凑卡 (1/3宽)</b> 等非对称尺寸；按住 <b>⠿ 把手</b> 拖拽排序。</span>
+  <span>💡 支持 <b>0.5x 迷你卡 (1/4宽)</b> 与 <b>0.75x 紧凑卡 (1/3宽)</b> 等尺寸；按住 <b>⠿ 把手</b> 拖拽排序。</span>
   <button onclick="document.getElementById('hintBanner').style.display='none'">✕</button>
 </div>
 
@@ -707,7 +735,7 @@
       cardEl.classList.remove(c.span);
       cardEl.classList.add(newSpan);
       c.span = newSpan;
-      showToast('更新卡片尺寸');
+      showToast('已更改卡片尺寸');
     }
   }
 
@@ -916,17 +944,20 @@
           </div>
           <div class="card-toolbar">
             <span class="drag-handle" draggable="true" title="按住拖拽排序">⠿</span>
-            <select class="size-select" onchange="changeSpan('${card.id}', this.value)">
-              <option value="span-05x" ${card.span === 'span-05x' ? 'selected' : ''}>0.5x 迷你卡 (1/4宽)</option>
-              <option value="span-075x" ${card.span === 'span-075x' ? 'selected' : ''}>0.75x 紧凑卡 (1/3宽)</option>
-              <option value="span-1x1" ${card.span === 'span-1x1' ? 'selected' : ''}>1.0x 标准卡 (1/2宽)</option>
-              <option value="span-15x" ${card.span === 'span-15x' ? 'selected' : ''}>1.5x 宽屏卡 (3/4宽)</option>
-              <option value="span-2x1" ${card.span === 'span-2x1' ? 'selected' : ''}>2.0x 整行卡 (全宽)</option>
-              <option value="span-1x2" ${card.span === 'span-1x2' ? 'selected' : ''}>1x2 纵向加高卡</option>
-              <option value="span-2x2" ${card.span === 'span-2x2' ? 'selected' : ''}>2x2 超大方卡</option>
-            </select>
-            <button class="tool-btn" onclick="toggleDark('${card.id}')">🎨 暗黑</button>
-            <button class="tool-btn" onclick="removeCard('${card.id}')">❌ 删除</button>
+            <div class="size-select-wrap">
+              <select class="size-select" onchange="changeSpan('${card.id}', this.value)" title="选择卡片尺寸">
+                <option value="span-05x" ${card.span === 'span-05x' ? 'selected' : ''}>0.5x 迷你</option>
+                <option value="span-075x" ${card.span === 'span-075x' ? 'selected' : ''}>0.75x 紧凑</option>
+                <option value="span-1x1" ${card.span === 'span-1x1' ? 'selected' : ''}>1.0x 标准</option>
+                <option value="span-15x" ${card.span === 'span-15x' ? 'selected' : ''}>1.5x 宽屏</option>
+                <option value="span-2x1" ${card.span === 'span-2x1' ? 'selected' : ''}>2.0x 通栏</option>
+                <option value="span-1x2" ${card.span === 'span-1x2' ? 'selected' : ''}>1x2 纵向</option>
+                <option value="span-2x2" ${card.span === 'span-2x2' ? 'selected' : ''}>2x2 大方</option>
+              </select>
+              <span class="size-select-arrow">▾</span>
+            </div>
+            <button class="tool-btn-icon" onclick="toggleDark('${card.id}')" title="切换暗黑风格">🎨</button>
+            <button class="tool-btn-icon del-btn" onclick="removeCard('${card.id}')" title="删除此卡片">✕</button>
           </div>
         </div>
       `;
