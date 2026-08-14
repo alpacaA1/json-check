@@ -467,7 +467,9 @@
     background: currentColor;
     content: "";
   }
-  .row-state.is-running { background: #e3f1e8; color: #2f8f5b; }
+  .row-state.is-running, .row-state.is-online { background: #e3f1e8; color: #2f8f5b; }
+  .row-state.is-service { background: #e8eef6; color: #35628c; }
+  .row-state.is-local { background: #f2ede4; color: #787267; }
 
   .star {
     min-height: 28px;
@@ -866,72 +868,106 @@
   document.getElementById('icon-search-sec').innerHTML = renderIconSvg('search', 14);
   document.getElementById('icon-palette-search').innerHTML = renderIconSvg('search', 19);
 
-  // Items database
-  const items = [
-    {
-      id: 'json-check',
-      name: 'JSON Check',
-      description: 'JSON 格式化、校验与修复',
-      category: 'tool',
-      tags: ['JSON', '调试', '格式化'],
-      url: 'prototypes/json-check.html'
-    },
-    {
-      id: 'bento-doc-builder',
-      name: 'Bento Doc Builder',
-      description: '视觉 PRD & 培训文档便当盒页面生成器',
-      category: 'tool',
-      tags: ['Bento', 'PRD', '生成器'],
-      url: 'prototypes/bento-doc-builder.html'
-    },
-    {
-      id: 'skills-manager',
-      name: 'Skills Manager',
-      description: '管理本地 Agent Skills',
-      category: 'tool',
-      tags: ['Skills', 'Agent', '管理'],
-      url: 'prototypes/skills-manager.html'
-    },
-    {
-      id: 'iot-attribute-frontend',
-      name: 'IoT Attribute Frontend',
-      description: '茶饮机设备属性轻量前端',
-      category: 'prototype',
-      tags: ['IoT', '属性', '原型'],
-      url: 'prototypes/iot-attribute-frontend.html'
-    },
-    {
-      id: 'kira-omega',
-      name: 'KIRA OMEGA IoT',
-      description: 'IoT 专业透视控制中心',
-      category: 'prototype',
-      tags: ['IoT', '控制台', '单页'],
-      url: 'prototypes/kira-omega.html'
-    },
-    {
-      id: 'calibration-training',
-      name: '自动校准功能培训',
-      description: '自动校准培训与演示材料',
-      category: 'prototype',
-      tags: ['校准', '培训', '演示'],
-      url: 'prototypes/calibration-training.html'
-    },
-    {
-      id: 'data-refresh',
-      name: '数据刷新',
-      description: '设备数据刷新页面复刻',
-      category: 'prototype',
-      tags: ['数据刷新', '静态原型'],
-      url: 'prototypes/data-refresh/index.html'
-    },
-    {
-      id: 'iot-3d-demo',
-      name: 'IoT 3D 热区测试',
-      description: '设备 3D 模块与热区交互',
-      category: 'prototype',
-      tags: ['3D', 'IoT', '热区'],
-      url: 'prototypes/iot-3d-demo/index.html'
+  // Items database & dynamic loading
+  let items = [];
+
+  function resolveItem(raw) {
+    const category = raw.category || 'tool';
+    const tags = raw.tags || [];
+    let targetType = 'local_folder';
+    let targetUrl = '';
+    let badge = '本地资源';
+    let badgeClass = 'is-local';
+
+    if (raw.url && /^https:\/\//i.test(raw.url)) {
+      targetType = 'online';
+      targetUrl = raw.url;
+      badge = '在线服务';
+      badgeClass = 'is-online';
+    } else if (raw.id === 'json-check') {
+      targetType = 'static';
+      targetUrl = 'prototypes/json-check.html';
+      badge = '在线工具';
+      badgeClass = 'is-running';
+    } else if (raw.id === 'bento-doc-builder') {
+      targetType = 'static';
+      targetUrl = 'prototypes/bento-doc-builder.html';
+      badge = '在线生成器';
+      badgeClass = 'is-running';
+    } else if (raw.id === 'kira-omega') {
+      targetType = 'static';
+      targetUrl = 'prototypes/kira-omega.html';
+      badge = '静态单页';
+      badgeClass = 'is-running';
+    } else if (raw.id === 'calibration-training') {
+      targetType = 'static';
+      targetUrl = 'prototypes/calibration-training.html';
+      badge = '培训单页';
+      badgeClass = 'is-running';
+    } else if (raw.id === 'data-refresh') {
+      targetType = 'static';
+      targetUrl = 'prototypes/data-refresh/index.html';
+      badge = '静态原型';
+      badgeClass = 'is-running';
+    } else if (raw.id === 'iot-3d-demo') {
+      targetType = 'static';
+      targetUrl = 'prototypes/iot-3d-demo/index.html';
+      badge = '3D 交互';
+      badgeClass = 'is-running';
+    } else if (raw.id === 'iot-attribute-frontend') {
+      targetType = 'static';
+      targetUrl = 'prototypes/iot-attribute-frontend.html';
+      badge = '前端单页';
+      badgeClass = 'is-running';
+    } else if (raw.id === 'skills-manager') {
+      targetType = 'static';
+      targetUrl = 'prototypes/skills-manager.html';
+      badge = '静态原型';
+      badgeClass = 'is-running';
+    } else if (raw.mode === 'static' && raw.root && raw.root.includes('{hubRoot}/managed')) {
+      targetType = 'static';
+      targetUrl = 'managed/' + (raw.entry || (raw.id + '.html'));
+      badge = '静态单页';
+      badgeClass = 'is-running';
+    } else if (raw.mode === 'service') {
+      targetType = 'local_service';
+      targetUrl = raw.url || (raw.port ? `http://127.0.0.1:${raw.port}` : '');
+      badge = raw.port ? `本地端口 :${raw.port}` : '本地服务';
+      badgeClass = 'is-service';
+    } else {
+      targetType = 'local_folder';
+      targetUrl = '';
+      badge = raw.category === 'resource' ? '本地资料' : '本地目录';
+      badgeClass = 'is-local';
     }
+
+    return {
+      id: raw.id,
+      name: raw.name,
+      description: raw.description || '',
+      category: category,
+      tags: tags,
+      root: raw.root || '',
+      port: raw.port,
+      targetType: targetType,
+      targetUrl: targetUrl,
+      badge: badge,
+      badgeClass: badgeClass,
+      raw: raw
+    };
+  }
+
+  const FALLBACK_RAW_ITEMS = [
+    { id: 'json-check', name: 'JSON Check', description: 'JSON 格式化、校验与修复', category: 'tool', mode: 'static', entry: 'json-check.html', tags: ['JSON', '调试', '格式化'] },
+    { id: 'bento-doc-builder', name: 'Bento Doc Builder', description: '视觉 PRD & 培训文档便当盒页面生成器', category: 'tool', mode: 'static', entry: 'bento-doc-builder.html', tags: ['Bento', 'PRD', '生成器'] },
+    { id: 'chagee-refund', name: '霸王茶姬退款查询', description: '霸王茶姬退款日志与订单查询平台', category: 'tool', mode: 'service', url: 'https://chagee-refund.2d.ltd/', tags: ['霸王茶姬', '退款', '查询'] },
+    { id: 'skills-manager', name: 'Skills Manager', description: '管理本地 Agent Skills', category: 'tool', mode: 'service', port: 3456, url: 'http://127.0.0.1:3456', tags: ['Skills', 'Agent', '管理'] },
+    { id: 'new-iot-console', name: 'New IoT Console', description: 'IoT 管理后台与物模型配置', category: 'project', mode: 'service', port: 5173, tags: ['IoT', 'React', 'Vite'] },
+    { id: 'iot-attribute-frontend', name: 'IoT Attribute Frontend', description: '茶饮机设备属性轻量前端', category: 'prototype', mode: 'static', tags: ['IoT', '属性', '原型'] },
+    { id: 'kira-omega', name: 'KIRA OMEGA IoT', description: 'IoT 专业透视控制中心', category: 'prototype', mode: 'static', tags: ['IoT', '控制台', '单页'] },
+    { id: 'calibration-training', name: '自动校准功能培训', description: '自动校准培训与演示材料', category: 'prototype', mode: 'static', tags: ['校准', '培训', '演示'] },
+    { id: 'data-refresh', name: '数据刷新', description: '设备数据刷新页面复刻', category: 'prototype', mode: 'static', tags: ['数据刷新', '静态原型'] },
+    { id: 'iot-3d-demo', name: 'IoT 3D 热区测试', description: '设备 3D 模块与热区交互', category: 'prototype', mode: 'static', tags: ['3D', 'IoT', '热区'] }
   ];
 
   function readIds(key) {
@@ -953,13 +989,45 @@
     const t = document.getElementById('toastNotice');
     t.innerText = msg;
     t.style.display = 'block';
-    setTimeout(() => { t.style.display = 'none'; }, 3000);
+    setTimeout(() => { t.style.display = 'none'; }, 3500);
   }
 
-  function handleOpenItem(id, url) {
+  function handleOpenItem(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+
     recent = [id, ...recent.filter(i => i !== id)].slice(0, 5);
     saveIds('tool-hub-recent', recent);
-    window.location.href = url;
+
+    if (item.targetType === 'online' || item.targetType === 'static') {
+      window.open(item.targetUrl, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    if (item.targetType === 'local_service') {
+      if (location.hostname === '127.0.0.1' || location.hostname === 'localhost') {
+        window.open(item.targetUrl, '_blank', 'noopener,noreferrer');
+      } else {
+        showToast(`💻 本地服务（${item.badge}）：需在运行了 Tool Hub 本地客户端的机器上访问`);
+      }
+      return;
+    }
+
+    // local_folder
+    showToast(`📂 本地资源：${item.root || item.name}（请在本地桌面应用中直接打开）`);
+  }
+
+  function copyItemUrl(id) {
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    const fullUrl = item.targetUrl ? (/^https?:\/\//i.test(item.targetUrl) ? item.targetUrl : (location.origin + '/' + item.targetUrl.replace(/^\/+/, ''))) : (item.root || item.name);
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      showToast('已复制地址/路径信息');
+    }).catch(() => {
+      showToast('复制失败');
+    });
+    activeActionId = null;
+    renderViews();
   }
 
   function toggleFavorite(id) {
@@ -994,7 +1062,7 @@
               <small>${item.category}</small>
             </div>
           </div>
-          <button class="compact-open-btn" onclick="handleOpenItem('${item.id}', '${item.url}')">
+          <button class="compact-open-btn" onclick="handleOpenItem('${item.id}')">
             ${renderIconSvg('arrow', 16)}
           </button>
         </div>
@@ -1002,6 +1070,8 @@
     }
 
     const showMenu = activeActionId === item.id;
+    const isDirectOpen = item.targetType === 'online' || item.targetType === 'static';
+
     return `
       <div class="tool-row">
         <div>
@@ -1016,25 +1086,25 @@
             </button>
           </div>
           <div class="row-tags">
-            ${item.tags.slice(0, 2).map(tag => `<span>${tag}</span>`).join('')}
+            ${item.tags.slice(0, 3).map(tag => `<span>${tag}</span>`).join('')}
           </div>
         </div>
 
         <div class="tool-row-footer">
-          <span class="row-state is-running">已就绪</span>
+          <span class="row-state ${item.badgeClass}">${item.badge}</span>
           <div class="tool-actions-group">
             <button class="more-actions" aria-label="更多操作" onclick="toggleActionMenu('${item.id}', event)">
               ${renderIconSvg('more', 18)}
             </button>
             ${showMenu ? `
               <div class="action-menu" onclick="event.stopPropagation()">
-                <button onclick="handleOpenItem('${item.id}', '${item.url}')">打开静态页面</button>
-                <button onclick="navigator.clipboard.writeText(location.origin + '/' + '${item.url}'); showToast('已复制在线地址'); activeActionId=null; renderViews();">复制在线链接</button>
+                <button onclick="handleOpenItem('${item.id}')">${isDirectOpen ? '在新标签打开' : '查看运行信息'}</button>
+                <button onclick="copyItemUrl('${item.id}')">复制链接/路径</button>
               </div>
             ` : ''}
-            <button class="row-open accent" onclick="handleOpenItem('${item.id}', '${item.url}')">
-              打开
-              ${renderIconSvg('arrow', 15)}
+            <button class="row-open ${isDirectOpen ? 'accent' : ''}" onclick="handleOpenItem('${item.id}')">
+              ${isDirectOpen ? '打开' : (item.targetType === 'local_service' ? '本地服务' : '查看')}
+              ${renderIconSvg(isDirectOpen ? 'arrow' : 'command', 15)}
             </button>
           </div>
         </div>
@@ -1105,7 +1175,7 @@
         document.getElementById('commonList').innerHTML = `<div class="empty-mini">${renderIconSvg('star', 17)} 打开或收藏入口后，它们会出现在这里。</div>`;
       }
 
-      document.getElementById('runningList').innerHTML = items.slice(0, 3).map(item => renderToolRowHtml(item, true)).join('');
+      document.getElementById('runningList').innerHTML = items.slice(0, 4).map(item => renderToolRowHtml(item, true)).join('');
       document.getElementById('homeToolList').innerHTML = items.map(item => renderToolRowHtml(item)).join('');
     } else {
       homeView.style.display = 'none';
@@ -1171,13 +1241,13 @@
     }
 
     paletteResults.innerHTML = filtered.map((item, idx) => `
-      <a href="${item.url}" class="${idx === paletteIndex ? 'palette-active' : ''}" onclick="handleOpenItem('${item.id}', '${item.url}')">
+      <a href="javascript:void(0)" class="${idx === paletteIndex ? 'palette-active' : ''}" onclick="handleOpenItem('${item.id}')">
         <span class="item-mark mark-${item.category}">${item.name.slice(0, 2)}</span>
         <span>
           <strong>${item.name}</strong>
           <small>${item.description}</small>
         </span>
-        ${renderIconSvg('arrow', 15)}
+        <span class="row-state ${item.badgeClass}" style="margin-left:auto; font-size:11px; padding:2px 6px;">${item.badge}</span>
       </a>
     `).join('');
   }
@@ -1216,12 +1286,30 @@
       }
       if (e.key === 'Enter' && filtered[paletteIndex]) {
         e.preventDefault();
-        handleOpenItem(filtered[paletteIndex].id, filtered[paletteIndex].url);
+        handleOpenItem(filtered[paletteIndex].id);
       }
     }
   });
 
-  renderViews();
+  // Async load tools.json
+  async function loadTools() {
+    try {
+      const res = await fetch('./tools.json');
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const data = await res.json();
+      if (Array.isArray(data.items)) {
+        items = data.items.map(resolveItem);
+      } else {
+        items = FALLBACK_RAW_ITEMS.map(resolveItem);
+      }
+    } catch (e) {
+      console.warn('Load tools.json failed, using fallback items:', e);
+      items = FALLBACK_RAW_ITEMS.map(resolveItem);
+    }
+    renderViews();
+  }
+
+  loadTools();
 </script>
 </body>
 </html>

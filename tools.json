@@ -28,6 +28,40 @@
       "featured": true
     },
     {
+      "id": "design-index",
+      "name": "Design Index",
+      "description": "本地 DESIGN.md 视觉参考库与 AI 设计工作流",
+      "category": "tool",
+      "mode": "static",
+      "root": "{hubRoot}/managed/design-workflow",
+      "entry": "index.html",
+      "tags": ["DESIGN.md", "UI", "Agent", "设计参考"],
+      "featured": true,
+      "actions": [
+        {
+          "id": "source",
+          "label": "打开 Skill 目录",
+          "type": "folder",
+          "target": "/Users/tianxucheng/.ai-tools/design-workflow"
+        }
+      ]
+    },
+    {
+      "id": "chagee-refund",
+      "name": "霸王茶姬退款查询",
+      "description": "霸王茶姬退款日志与订单查询平台",
+      "category": "tool",
+      "mode": "service",
+      "root": "{hubRoot}",
+      "url": "https://chagee-refund.2d.ltd/",
+      "start": { "command": "open", "args": ["https://chagee-refund.2d.ltd/"] },
+      "tags": ["霸王茶姬", "退款", "查询"],
+      "featured": true,
+      "actions": [
+        { "id": "open-browser", "label": "在浏览器打开", "type": "url", "url": "https://chagee-refund.2d.ltd/" }
+      ]
+    },
+    {
       "id": "skills-manager",
       "name": "Skills Manager",
       "description": "管理本地 Agent Skills",
