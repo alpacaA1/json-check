@@ -1047,6 +1047,18 @@
     if (activeActionId) { activeActionId = null; renderViews(); }
   });
 
+  function handleRemoveItem(id, e) {
+    if (e) e.stopPropagation();
+    const item = items.find(i => i.id === id);
+    if (!item) return;
+    const confirmed = confirm(`确定要从视图中移除「${item.name}」吗？\n\n提示：如需永久同步到所有端，请在桌面端/本地服务端删除，或直接修改 tools.json。`);
+    if (!confirmed) return;
+    items = items.filter(i => i.id !== id);
+    activeActionId = null;
+    showToast(`已移除「${item.name}」`);
+    renderViews();
+  }
+
   function renderToolRowHtml(item, compact = false) {
     const isFav = favorites.includes(item.id);
     const markText = item.name.slice(0, 2);
@@ -1100,6 +1112,7 @@
               <div class="action-menu" onclick="event.stopPropagation()">
                 <button onclick="handleOpenItem('${item.id}')">${isDirectOpen ? '在新标签打开' : '查看运行信息'}</button>
                 <button onclick="copyItemUrl('${item.id}')">复制链接/路径</button>
+                <button style="color: #df6a4b;" onclick="handleRemoveItem('${item.id}', event)">移除此入口</button>
               </div>
             ` : ''}
             <button class="row-open ${isDirectOpen ? 'accent' : ''}" onclick="handleOpenItem('${item.id}')">
